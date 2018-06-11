@@ -1,0 +1,9 @@
+- Enforce validity in encryption window
+	- change up validity check in cryptomanager
+	
+- Read shit from metadata when encrypting
+	- Store IV in there too
+
+- Rewrite IV generation (inline?)
+
+- Schmidt fragen, ob es eine Methode gibt, um für Encryption Method erwünschte Keylänge zurückzugeben (also DES = 64, AES = 192)

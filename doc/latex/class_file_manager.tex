@@ -1,0 +1,60 @@
+\hypertarget{class_file_manager}{}\section{File\+Manager Class Reference}
+\label{class_file_manager}\index{File\+Manager@{File\+Manager}}
+\subsection*{Static Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+static String \mbox{\hyperlink{class_file_manager_a52f2989a90be68d1632274d84a165030}{open\+From\+Path}} (String path, Encryption\+Type encryption, Mode\+Type mode, Padding\+Type padding)
+\item 
+static void \mbox{\hyperlink{class_file_manager_a44f1be89277979c7e729562bbedd3145}{save\+To\+Path}} (File file, String input, Encryption\+Type encryption, Mode\+Type mode, Padding\+Type padding)
+\end{DoxyCompactItemize}
+
+
+\subsection{Member Function Documentation}
+\mbox{\Hypertarget{class_file_manager_a52f2989a90be68d1632274d84a165030}\label{class_file_manager_a52f2989a90be68d1632274d84a165030}} 
+\index{File\+Manager@{File\+Manager}!open\+From\+Path@{open\+From\+Path}}
+\index{open\+From\+Path@{open\+From\+Path}!File\+Manager@{File\+Manager}}
+\subsubsection{\texorpdfstring{open\+From\+Path()}{openFromPath()}}
+{\footnotesize\ttfamily static String File\+Manager.\+open\+From\+Path (\begin{DoxyParamCaption}\item[{String}]{path,  }\item[{Encryption\+Type}]{encryption,  }\item[{Mode\+Type}]{mode,  }\item[{Padding\+Type}]{padding }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [static]}}
+
+Reads a byte array from a given path to then decrypt it using the \mbox{\hyperlink{class_crypto_manager}{Crypto\+Manager}} class.
+
+
+\begin{DoxyParams}{Parameters}
+{\em path} & Path to read the file from. \\
+\hline
+{\em encryption} & Encryption Method \\
+\hline
+{\em mode} & Mode \\
+\hline
+{\em padding} & Padding type \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Encrypted content from file as String 
+\end{DoxyReturn}
+\mbox{\Hypertarget{class_file_manager_a44f1be89277979c7e729562bbedd3145}\label{class_file_manager_a44f1be89277979c7e729562bbedd3145}} 
+\index{File\+Manager@{File\+Manager}!save\+To\+Path@{save\+To\+Path}}
+\index{save\+To\+Path@{save\+To\+Path}!File\+Manager@{File\+Manager}}
+\subsubsection{\texorpdfstring{save\+To\+Path()}{saveToPath()}}
+{\footnotesize\ttfamily static void File\+Manager.\+save\+To\+Path (\begin{DoxyParamCaption}\item[{File}]{file,  }\item[{String}]{input,  }\item[{Encryption\+Type}]{encryption,  }\item[{Mode\+Type}]{mode,  }\item[{Padding\+Type}]{padding }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [static]}}
+
+Encrypts an input String using the \mbox{\hyperlink{class_crypto_manager}{Crypto\+Manager}} class to then write it to a file.
+
+
+\begin{DoxyParams}{Parameters}
+{\em file} & The output file \\
+\hline
+{\em input} & The input String \\
+\hline
+{\em encryption} & Encryption Method \\
+\hline
+{\em mode} & Mode \\
+\hline
+{\em padding} & Padding type \\
+\hline
+\end{DoxyParams}
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+Secure Text Editor v2/src/\mbox{\hyperlink{_file_manager_8java}{File\+Manager.\+java}}\end{DoxyCompactItemize}

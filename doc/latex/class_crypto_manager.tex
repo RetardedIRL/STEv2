@@ -1,0 +1,64 @@
+\hypertarget{class_crypto_manager}{}\section{Crypto\+Manager Class Reference}
+\label{class_crypto_manager}\index{Crypto\+Manager@{Crypto\+Manager}}
+\subsection*{Static Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+static byte \mbox{[}$\,$\mbox{]} \mbox{\hyperlink{class_crypto_manager_a16c99441e20ceb5e1e6bb20abdc33f24}{encrypt}} (String input, Encryption\+Type encryption, Mode\+Type mode, Padding\+Type padding)  throws Exception 
+\item 
+static String \mbox{\hyperlink{class_crypto_manager_a63fce196907289e0568b8d0bde582be0}{decrypt}} (byte\mbox{[}$\,$\mbox{]} input, Encryption\+Type encryption, Mode\+Type mode, Padding\+Type padding)  throws Exception 
+\end{DoxyCompactItemize}
+
+
+\subsection{Member Function Documentation}
+\mbox{\Hypertarget{class_crypto_manager_a63fce196907289e0568b8d0bde582be0}\label{class_crypto_manager_a63fce196907289e0568b8d0bde582be0}} 
+\index{Crypto\+Manager@{Crypto\+Manager}!decrypt@{decrypt}}
+\index{decrypt@{decrypt}!Crypto\+Manager@{Crypto\+Manager}}
+\subsubsection{\texorpdfstring{decrypt()}{decrypt()}}
+{\footnotesize\ttfamily static String Crypto\+Manager.\+decrypt (\begin{DoxyParamCaption}\item[{byte \mbox{[}$\,$\mbox{]}}]{input,  }\item[{Encryption\+Type}]{encryption,  }\item[{Mode\+Type}]{mode,  }\item[{Padding\+Type}]{padding }\end{DoxyParamCaption}) throws Exception\hspace{0.3cm}{\ttfamily [static]}}
+
+Decrypts a byte array to a String using various encryption methods, modes and padding types by making use of the Bouncy\+Castle -\/ provider. 
+\begin{DoxyParams}{Parameters}
+{\em input} & to decryptable byte array \\
+\hline
+{\em encryption} & Encryption Method \\
+\hline
+{\em mode} & Mode \\
+\hline
+{\em padding} & Padding \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Encrypted String. 
+\end{DoxyReturn}
+
+\begin{DoxyExceptions}{Exceptions}
+{\em Exception} & \\
+\hline
+\end{DoxyExceptions}
+\mbox{\Hypertarget{class_crypto_manager_a16c99441e20ceb5e1e6bb20abdc33f24}\label{class_crypto_manager_a16c99441e20ceb5e1e6bb20abdc33f24}} 
+\index{Crypto\+Manager@{Crypto\+Manager}!encrypt@{encrypt}}
+\index{encrypt@{encrypt}!Crypto\+Manager@{Crypto\+Manager}}
+\subsubsection{\texorpdfstring{encrypt()}{encrypt()}}
+{\footnotesize\ttfamily static byte \mbox{[}$\,$\mbox{]} Crypto\+Manager.\+encrypt (\begin{DoxyParamCaption}\item[{String}]{input,  }\item[{Encryption\+Type}]{encryption,  }\item[{Mode\+Type}]{mode,  }\item[{Padding\+Type}]{padding }\end{DoxyParamCaption}) throws Exception\hspace{0.3cm}{\ttfamily [static]}}
+
+Encrypts a String to a byte array using various encryption methods, modes and padding types by making use of the Bouncy\+Castle -\/ provider.
+
+
+\begin{DoxyParams}{Parameters}
+{\em input} & To encryptable string. \\
+\hline
+{\em encryption} & Encryption Method \\
+\hline
+{\em mode} & Encryption Mode \\
+\hline
+{\em padding} & Padding \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+encrypted byte array 
+\end{DoxyReturn}
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+Secure Text Editor v2/src/\mbox{\hyperlink{_crypto_manager_8java}{Crypto\+Manager.\+java}}\end{DoxyCompactItemize}
