@@ -1,9 +1,6 @@
-- Enforce validity in encryption window
-	- change up validity check in cryptomanager
+- Enforce validity in Encryption Options window
+	- write "compatibles" class?
 	
-- Read shit from metadata when encrypting
-	- Store IV in there too
+- Auf Antwort vom Schmidt warten bezüglich Keyübergabe (Joel Bescheid geben)
 
-- Rewrite IV generation (inline?)
-
-- Schmidt fragen, ob es eine Methode gibt, um für Encryption Method erwünschte Keylänge zurückzugeben (also DES = 64, AES = 192)
+- Hashvalidierung

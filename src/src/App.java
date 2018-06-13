@@ -1,7 +1,7 @@
 package src;
 
 import Enums.EncryptionType;
-import Enums.ModeType;
+import Enums.EncryptionMode;
 import Enums.PaddingType;
 
 import src.Model;
@@ -19,7 +19,6 @@ import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.TextArea;
-import javafx.scene.control.ToggleGroup;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
@@ -155,24 +154,24 @@ public class App extends Application {
 	            public void handle(ActionEvent t) {
 	            	
 	            	//TODO change other dropdown options depending on the encryption
-	            	model.setEncryptionType(encryptionBox.getValue());
+	            	model.getCurrentMeta().setEncryptionType(encryptionBox.getValue());
 	            }
 			});
 			
 			encryptionBox.setValue(EncryptionType.none);
 			encryptionBox.getItems().addAll(EncryptionType.values());
 			
-			ComboBox<ModeType> modeBox = new ComboBox<ModeType>();
+			ComboBox<EncryptionMode> modeBox = new ComboBox<EncryptionMode>();
 			modeBox.setOnAction(new EventHandler<ActionEvent>() {
 	            public void handle(ActionEvent t) {
 	            	
 	            	//TODO change other dropdown options depending on the encryption
-	            	model.setModeType(modeBox.getValue());
+	            	model.getCurrentMeta().setEncryptionMode(modeBox.getValue());
 	            }
 			});
 			
-			modeBox.setValue(ModeType.ECB);
-			modeBox.getItems().addAll(ModeType.values());
+			modeBox.setValue(EncryptionMode.ECB);
+			modeBox.getItems().addAll(EncryptionMode.values());
 			
 			
 			ComboBox<PaddingType> paddingBox = new ComboBox<PaddingType>();
@@ -180,7 +179,7 @@ public class App extends Application {
 	            public void handle(ActionEvent t) {
 	            	
 	            	//TODO change other dropdown options depending on the encryption
-	            	model.setPaddingType(paddingBox.getValue());
+	            	model.getCurrentMeta().setPaddingType(paddingBox.getValue());
 	            }
 			});
 			

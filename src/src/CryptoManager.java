@@ -1,6 +1,8 @@
 package src;
 
 import java.security.Key;
+import java.security.MessageDigest;
+import java.security.SecureRandom;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
@@ -8,161 +10,112 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import Enums.EncryptionType;
-import Enums.ModeType;
-import Enums.PaddingType;
+import Enums.HashFunction;
+import persistence.MetaData;
 
 public class CryptoManager {
     
-    //Temporary byte array for pseudorandom IV generation
-    static byte[] msgNumber = new byte[] {
-    	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-    };
-    
-    /**
-     * Encrypts a String to a byte array using various encryption methods, modes and padding types
-     * by making use of the BouncyCastle - provider.
-     * 
-     * @param input To encryptable string.
-     * @param encryption Encryption Method
-     * @param mode Encryption Mode
-     * @param padding Padding
-     * @return encrypted byte array
-     */
-    public static byte[][] encrypt(String input, EncryptionType encryption, ModeType mode, PaddingType padding) throws Exception {
+    public static byte[][] encrypt(String input, MetaData meta) throws Exception {
 		
     	byte[] inputBytes = input.getBytes();
-    	Key key;
 		
-		if(encryption == EncryptionType.none) {
-			return new byte[][] {inputBytes, null, null};
+		if(meta.getEncryptionType() == EncryptionType.none) {
+			meta.setHashValue(generateHash(meta.getHashFunction(), inputBytes));
+			return new byte[][] {inputBytes, null};
 		}
 		
-		Cipher cipher = Cipher.getInstance(encryption.toString() + "/" + mode.toString() + "/" + padding.toString());
+		Key key = generateKey(meta);
 		
-		key = generateKey(encryption);
-
-		// Complete check for validity of parameters chosen -- TODO: Stream cipher mode block size
-		if(Logic.isValid(encryption, mode, padding, inputBytes, cipher.getBlockSize())) {
-			
-			byte[] iv = null;
-			//If mode requires IV
-			switch(Logic.requiresIV(mode)) {
-			
-			//no IV
-			case -1:
-				
-				System.out.println("no IV");
-				
-				cipher.init(Cipher.ENCRYPT_MODE, key);
-				break;
-				
-			//normal inline IV
-			case 0:
-				
-				System.out.println("Normal inline IV");
-				
-				iv = new byte[cipher.getBlockSize()];
-				IvParameterSpec zeroIV = new IvParameterSpec(iv);
-				
-				cipher.init(Cipher.ENCRYPT_MODE, key, zeroIV);
-				
-				IvParameterSpec encryptionIV = new IvParameterSpec(cipher.doFinal(msgNumber), 0, 8);
-				
-				cipher.init(Cipher.ENCRYPT_MODE, key, encryptionIV);
-				break;
-				
-			//Stream cipher IV
-			case 1:
-				
-				System.out.println("Stream cipher IV");
-				
-				iv = new byte[] {0x07, 0x06, 0x05, 0x04, 0x00, 0x00, 0x00, 0x01};
-				
-				IvParameterSpec tempStreamIVSpec = new IvParameterSpec(iv);
-				
-				cipher.init(Cipher.ENCRYPT_MODE, key, tempStreamIVSpec);
-				break;
-				
-			default:
-				break;
-			}
-			
-			byte[] cipherText = new byte[cipher.getOutputSize(inputBytes.length)];
-			
-			int ctLength = cipher.update(inputBytes, 0, inputBytes.length, cipherText, 0);
-			
-			ctLength += cipher.doFinal(cipherText, ctLength);
-			
-			return new byte[][] {cipherText, key.getEncoded(), iv};
-    	}
-		else
-			throw new Exception("input not valid");
+		IvParameterSpec iv = getMatchingIV(meta);
+		
+		meta.setIV(iv.getIV());
+		
+		Cipher cipher = generateCipher(Cipher.ENCRYPT_MODE, meta, key, iv);
+		
+		byte[] ciphertext = applyCipher(cipher, input.getBytes());
+		
+		meta.setHashValue(generateHash(meta.getHashFunction(), ciphertext));
+		
+		return new byte[][] {ciphertext, key.getEncoded()};
 	}
-
-    /**
-     * Decrypts a byte array to a String using various encryption methods, modes and padding types
-     * by making use of the BouncyCastle - provider.
-     * @param input to decryptable byte array
-     * @param encryption Encryption Method
-     * @param mode Mode
-     * @param padding Padding
-     * @return Encrypted String.
-     * @throws Exception
-     */
-	public static String decrypt(byte[] input, EncryptionType encryption, ModeType mode, PaddingType padding, byte[] keyBytes, byte[] iv) throws Exception {
+    
+    public static String decrypt(byte[] input, MetaData meta, byte[] key) throws Exception {
 		
-		byte[] inputBytes = input;
-
-		SecretKeySpec key = new SecretKeySpec(keyBytes, "BC");
+    	byte[] inputBytes = input;
 		
-		if(encryption == EncryptionType.none) {
+    	validateHash(meta.getHashFunction(), inputBytes, meta.getHashValue());
+    	
+		if(meta.getEncryptionType() == EncryptionType.none) {
 			return new String(inputBytes, "UTF-8");
 		}
 		
-		Cipher cipher = Cipher.getInstance(encryption.toString() + "/" + mode.toString() + "/" + padding.toString());
+		IvParameterSpec iv = new IvParameterSpec(meta.getIV());
 		
-		//TODO: Generate IV by reading from metadata
-		//If mode requires IV
-		switch(Logic.requiresIV(mode)) {
-			
-		//no IV
-		case -1:
-			cipher.init(Cipher.DECRYPT_MODE, key);
-			break;
+		Cipher cipher = generateCipher(Cipher.DECRYPT_MODE, meta, new SecretKeySpec(key, "BC"), iv);
 		
-		//normal IV
-		case 0:
-			IvParameterSpec zeroIV = new IvParameterSpec(iv);
-			
-			cipher.init(Cipher.DECRYPT_MODE, key, zeroIV);
-			
-			IvParameterSpec encryptionIV = new IvParameterSpec(cipher.doFinal(msgNumber), 0, 8);
-			
-			cipher.init(Cipher.DECRYPT_MODE, key, encryptionIV);
-			break;
-		
-		// Stream cipher IV
-		case 1:
-					
-			IvParameterSpec tempStreamIVSpec = new IvParameterSpec(iv);
-			
-			cipher.init(Cipher.DECRYPT_MODE, key, tempStreamIVSpec);
-			
-			break;
-			
-		default:
-			break;
-		}
-		
-		byte[] cipherText = new byte[cipher.getOutputSize(inputBytes.length)];
-		
-		int ctLength = cipher.update(inputBytes, 0, inputBytes.length, cipherText, 0);
-		
-		ctLength += cipher.doFinal(cipherText, ctLength);
-		
-		return new String(cipherText, "UTF-8");
+		return new String(applyCipher(cipher, input), "UTF-8");
 	}
 
+    private static IvParameterSpec getMatchingIV(MetaData meta) {
+    	
+    	switch(meta.getEncryptionMode().requiresIV()) {
+    	
+    	//no IV
+    	case -1: 
+    		return null;
+    		
+    	//inline IV
+    	case 0:
+    		return generateIvParameterSpec(meta.getEncryptionType().getIVSize());
+    
+    	//stream cipher IV
+    	case 1:
+    		
+    		//TEMP
+    		return new IvParameterSpec(new byte[] {0x13 , 0x12 ,0x11 ,0x10 ,0x09 ,0x08 ,0x07 ,0x06 ,0x05, 0x04, 0x03, 0x02, 0x01, 0x00, 0x00, 0x01});
+    	
+    	default:
+    		return null;
+    	}
+    }
+    
+    private static IvParameterSpec generateIvParameterSpec(int length) {
+    	
+    	IvParameterSpec ivSpec = null;
+    	
+    	if(length > 0) {
+    		SecureRandom rnd = new SecureRandom();
+    		
+    		byte[] ivBytes = new byte[length];
+    		
+    		rnd.nextBytes(ivBytes);
+    		
+    		ivSpec = new IvParameterSpec(ivBytes);
+    	}
+    	return ivSpec;
+    }
+    
+    private static Cipher generateCipher(int mode, MetaData meta, Key key, IvParameterSpec iv) throws Exception {
+    	Cipher cipher = Cipher.getInstance(meta.getEncryptionType().toString() + "/" + meta.getEncryptionMode().toString() + "/" + meta.getPaddingType().toString(), "BC");
+    
+    	if(iv != null)
+    		cipher.init(mode, key, iv);
+    	else
+    		cipher.init(mode,  key);
+    	
+    	return cipher;
+    }
+    
+    private static byte[] applyCipher(Cipher cipher, byte[] input) throws Exception
+	{
+		byte[] output = new byte[cipher.getOutputSize(input.length)];
+		
+		int ctLength = cipher.update(input, 0, input.length, output, 0);
+		
+		ctLength += cipher.doFinal(output, ctLength);
+		
+		return output;
+	}
 	
 	/**
 	 * Method to generate a random key using the KeyGenerator class.
@@ -171,24 +124,37 @@ public class CryptoManager {
 	 * @return generated Key
 	 * @throws Exception
 	 */
-	static Key generateKey(EncryptionType encryption) throws Exception {
-		int strength;
+	private static Key generateKey(MetaData meta) throws Exception {
 		
-		switch(encryption) {
+		KeyGenerator generator = KeyGenerator.getInstance(meta.getEncryptionType().toString(), "BC");
 		
-			case DES:
-				strength = 64;
-				break;
-			case AES:
-				strength = 192;
-				break;
-			default:
-				throw new Exception("Unknown Encryption Strength");
-		}
-		
-		KeyGenerator generator = KeyGenerator.getInstance(encryption.toString(), "BC");
-		
-		generator.init(strength);
+		generator.init(meta.getKeyLength().asInt());
 		return generator.generateKey();
+	}
+
+	public static String generateHash(HashFunction hashFunction, byte[] input) throws Exception
+	{
+		if(hashFunction != HashFunction.NONE)
+		{
+			MessageDigest hash = MessageDigest.getInstance(hashFunction.toString(), "BC");
+			hash.update(input);
+		
+			return new String(hash.digest(), "UTF-8");
+		}
+		return null;
+	}
+
+	public static void validateHash(HashFunction hashFunction, byte[] input, String read) throws Exception
+	{
+		if(hashFunction != HashFunction.NONE)
+		{
+			MessageDigest hash = MessageDigest.getInstance(hashFunction.toString(), "BC");
+			hash.update(input);
+			
+			if(!MessageDigest.isEqual(read.getBytes() , hash.digest()))
+			{
+				throw new Exception("File has been corrupted/altered");
+			}
+		}
 	}
 }

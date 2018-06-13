@@ -2,21 +2,16 @@ package src;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.attribute.UserDefinedFileAttributeView;
 
 import Enums.EncryptionType;
-import Enums.ModeType;
-import Enums.PaddingType;
+import persistence.MetaData;
 
 public class FileManager {
 
+	private static String safetyPath = "C:\\Users\\gpota\\Desktop\\safety";
 	/**
 	 * Reads a byte array from a given path to then decrypt it using the CryptoManager class.
 	 * 
@@ -26,41 +21,26 @@ public class FileManager {
 	 * @param padding Padding type
 	 * @return Encrypted content from file as String
 	 */
-	public static String openFromPath(String path) {
+	public static String openFromPath(File file, MetaData meta) throws Exception{
+
+		byte[] byteArray = null;
+		byte[] keyBytes = null;
 		
 		try {
-			Path filePath = Paths.get(path);
-			byte[] byteArray = Files.readAllBytes(filePath);
+			byteArray = Files.readAllBytes(file.toPath());
+			System.out.println(meta);
 			
-            EncryptionType  encryptIn 	= EncryptionType.valueOf( new String((byte[])Files.getAttribute(filePath, "user:Encryption"), "utf-8"));
-            ModeType 		modeIn 		= ModeType.valueOf( new String((byte[])Files.getAttribute(filePath, "user:Mode"), "utf-8"));
-            PaddingType 	paddingIn 	= PaddingType.valueOf( new String((byte[])Files.getAttribute(filePath, "user:Padding"), "utf-8"));
-			
-            
-            byte[] IVIn = null;
-            
-            if(Logic.requiresIV(modeIn) > -1)
-            	IVIn = (byte[]) Files.getAttribute(filePath, "user:IV");
-			
-            byte[] keyIn = null;
-            if(encryptIn != EncryptionType.none)
-            	keyIn = (byte[]) Files.getAttribute(filePath,  "user:Key");
-			System.out.println(encryptIn + ", " + modeIn + ", " + paddingIn + ", " + new String(keyIn, "UTF-8") + ", " + IVIn);
-			
-			return CryptoManager.decrypt(byteArray, encryptIn, modeIn, paddingIn, keyIn, IVIn);
-			
-		} catch (FileNotFoundException e) {
-			System.err.println("FILE WAS NOT FOUND");
-			e.printStackTrace();
+			if(meta.getEncryptionType() != EncryptionType.none) {
+				keyBytes = Files.readAllBytes(new File(safetyPath + file.getName()).toPath());
+			}
 		} catch (IOException e) {
-			System.err.println("LINE READING ERROR");
 			e.printStackTrace();
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
-		return null;
+			
+		return CryptoManager.decrypt(byteArray, meta, keyBytes);
+
 	}
 	
 	/**
@@ -72,28 +52,38 @@ public class FileManager {
 	 * @param mode Mode
 	 * @param padding Padding type
 	 */
-	public static void saveToPath(File file, String input, EncryptionType encryption, ModeType mode, PaddingType padding) {
+	public static void saveToPath(File file, String input, MetaData meta) {
 		
 		try {
 			FileOutputStream fileOutput = new FileOutputStream(file);
 			
 			BufferedOutputStream bufferedOutput = new BufferedOutputStream(fileOutput);
 			
-			byte[][] output = CryptoManager.encrypt(input, encryption, mode, padding);
+			byte[][] output = CryptoManager.encrypt(input, meta);
 		
-			System.out.println(new String(output[0], "UTF-8"));
-			System.out.println(new String(output[1], "UTF-8"));
-            Files.setAttribute(file.toPath(), "user:Encryption", encryption.toString().getBytes("UTF-8"));
-            Files.setAttribute(file.toPath(), "user:Mode", mode.toString().getBytes("UTF-8"));
-            Files.setAttribute(file.toPath(), "user:Padding", padding.toString().getBytes("UTF-8"));
+            Files.setAttribute(file.toPath(), "user:Encryption", meta.getEncryptionType().toString().getBytes("UTF-8"));
+            Files.setAttribute(file.toPath(), "user:Mode", meta.getEncryptionMode().toString().getBytes("UTF-8"));
+            Files.setAttribute(file.toPath(), "user:Padding", meta.getPaddingType().toString().getBytes("UTF-8"));
+            
+            // Write key to safety file
+            if(meta.getEncryptionType() != EncryptionType.none) {
+            	
+            	String safetyPath = "C:\\Users\\gpota\\Desktop\\safety\\" + file.getName();
+            	
+            	FileOutputStream safetyFileOutput = new FileOutputStream(new File(safetyPath));
+            	
+            	BufferedOutputStream safetyBufferedOutput = new BufferedOutputStream(safetyFileOutput);
+            	
+            	safetyBufferedOutput.write(output[1]);
+            	
+            	System.out.println(new String(output[1], "UTF-8"));
+            	
+            	safetyBufferedOutput.close();
+            }
             
             // if IV then set that
-            
-            if(encryption != EncryptionType.none)
-            	Files.setAttribute(file.toPath(), "user:Key", output[1]);
-            	
-            if(Logic.requiresIV(mode) > -1)
-            	Files.setAttribute(file.toPath(), "user:IV", output[2]);
+            if(meta.getIV() != null)
+            	Files.setAttribute(file.toPath(), "user:IV", meta.getIV());
             else
             	System.out.println("IV = null");
             
