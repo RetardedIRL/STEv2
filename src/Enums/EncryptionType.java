@@ -28,4 +28,13 @@ public enum EncryptionType {
 		
 		return 0;
 	}
+	
+	public int getBlockSize() {
+		if(this == DES)
+			return 8;
+		if(this == AES)
+			return 16;
+		
+		return 0;
+	}
 }

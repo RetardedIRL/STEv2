@@ -1,11 +1,13 @@
-package src;
+package logic;
 
+import persistence.FileManager;
 import java.io.File;
 import java.nio.file.Files;
 
 import Enums.EncryptionMode;
 import Enums.EncryptionType;
 import Enums.HashFunction;
+import Enums.Operation;
 import Enums.PaddingType;
 import javafx.scene.control.TextArea;
 import javafx.stage.FileChooser;
@@ -34,12 +36,12 @@ public class Model {
 	private void loadMetaData(File file) {
 		try {
 			MetaData openedData = new MetaData();
+			openedData.setOperation(Operation.valueOf(asString(file, "user:Operation")));
 			openedData.setEncryptionType(EncryptionType.valueOf(asString(file, "user:Encryption")));
 			openedData.setEncryptionMode(EncryptionMode.valueOf(asString(file, "user:Mode")));
 			openedData.setPaddingType(PaddingType.valueOf(asString(file, "user:Padding")));
 			openedData.setHashFunction(HashFunction.valueOf(asString(file, "user:HashFunction")));
 			openedData.setHashValue(new String((byte[])Files.getAttribute(file.toPath(), "user:Hash")));
-			System.out.println(openedData.getHashValue());
 			openedData.setIV(asString(file, "user:IV").getBytes());
 			currentMeta = openedData;
 			
@@ -57,7 +59,7 @@ public class Model {
 	/**
 	 * Method to open a file. Uses FileChooser and FileManager classes.
 	 */
-	void open() {
+	public void open() {
 		try {
 			FileChooser fileChooser = new FileChooser();
 			File file = fileChooser.showOpenDialog(null);
@@ -78,7 +80,7 @@ public class Model {
 	 * 
 	 * Uses saveAs if this is the first save.
 	 */
-	void save() {
+	public void save() {
 		
 		//File already exists
 		if(fileName != null) {
@@ -100,7 +102,7 @@ public class Model {
 	/**
 	 * Method to save to a new file. Uses FileChooser and FileManager to write to file
 	 */
-	void saveAs() {
+	public void saveAs() {
 		FileChooser fileChooser = new FileChooser();
 		
 		//Sets the datatype that is displayed in the filechooser
@@ -122,7 +124,7 @@ public class Model {
 		}
 	}
 	
-	MetaData getCurrentMeta() {
+	public MetaData getCurrentMeta() {
 		return this.currentMeta;
 	}
 }

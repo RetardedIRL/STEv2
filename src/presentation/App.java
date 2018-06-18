@@ -1,12 +1,13 @@
-package src;
+package presentation;
+
+import logic.Model;
 
 import Enums.EncryptionType;
+import Enums.HashFunction;
 import Enums.KeyLength;
 import Enums.Operation;
 import Enums.EncryptionMode;
 import Enums.PaddingType;
-
-import src.Model;
 
 import javafx.application.Application;
 import javafx.event.ActionEvent;
@@ -139,6 +140,7 @@ public class App extends Application {
 			gridPane.getColumnConstraints().add(new ColumnConstraints(200));
 			gridPane.getColumnConstraints().add(new ColumnConstraints(200));
 			gridPane.getColumnConstraints().add(new ColumnConstraints(200));
+			gridPane.getColumnConstraints().add(new ColumnConstraints(200));
 			
 			gridPane.getRowConstraints().add(new RowConstraints(50));
 			
@@ -147,18 +149,21 @@ public class App extends Application {
 			Text keyLengthText = new Text("Key Length");
 			Text modeText = new Text("Encryption Mode");
 			Text paddingText = new Text("Padding");
+			Text hashFText = new Text("Hash Function");
 			
 			GridPane.setHalignment(operationText, 	HPos.CENTER);
 			GridPane.setHalignment(encryptionText, 	HPos.CENTER);
 			GridPane.setHalignment(keyLengthText, 	HPos.CENTER);
 			GridPane.setHalignment(modeText, 		HPos.CENTER);
 			GridPane.setHalignment(paddingText, 	HPos.CENTER);
+			GridPane.setHalignment(hashFText, 		HPos.CENTER);
 			
 			gridPane.add(operationText,	0, 0);
 			gridPane.add(encryptionText,1, 0);
 			gridPane.add(keyLengthText, 2, 0);
 			gridPane.add(modeText, 		3, 0);
 			gridPane.add(paddingText, 	4, 0);
+			gridPane.add(hashFText, 	5, 0);
 			
 			ComboBox<PaddingType> paddingBox = new ComboBox<PaddingType>();
 			paddingBox.setOnAction(new EventHandler<ActionEvent>() {
@@ -211,26 +216,38 @@ public class App extends Application {
 	            }
 			});
 			
-			operationBox.setValue(Operation.Symmetric);
 			operationBox.getItems().addAll(Operation.values());
+			
+			ComboBox<HashFunction> hashFBox = new ComboBox<HashFunction>();
+			hashFBox.setOnAction(new EventHandler<ActionEvent>() {
+	            public void handle(ActionEvent t) {
+	            	
+	            	model.getCurrentMeta().setHashFunction(hashFBox.getValue());
+	            }
+			});
+			
+			hashFBox.getItems().addAll(HashFunction.values());
 			
 			GridPane.setHalignment(operationBox, HPos.CENTER);
 			GridPane.setHalignment(encryptionBox, HPos.CENTER);
 			GridPane.setHalignment(keyLengthBox, HPos.CENTER);
 			GridPane.setHalignment(modeBox, HPos.CENTER);
 			GridPane.setHalignment(paddingBox, HPos.CENTER);
+			GridPane.setHalignment(hashFBox, HPos.CENTER);
 			
 			operationBox.setMinWidth(150);
 			encryptionBox.setMinWidth(150);
 			keyLengthBox.setMinWidth(150);
 			modeBox.setMinWidth(150);
 			paddingBox.setMinWidth(150);
+			hashFBox.setMinWidth(150);
 			
 			gridPane.add(operationBox, 0, 1);
 			gridPane.add(encryptionBox, 1, 1);
 			gridPane.add(keyLengthBox, 2, 1);
 			gridPane.add(modeBox, 3, 1);
 			gridPane.add(paddingBox, 4, 1);
+			gridPane.add(hashFBox, 5, 1);
 			
 			Button doneButton = new Button("Done");
 			doneButton.setOnAction(new EventHandler<ActionEvent>() {
@@ -250,9 +267,9 @@ public class App extends Application {
 			
 			GridPane.setMargin(doneButton, new Insets(10, 10, 10, 10));
 			
-			gridPane.add(doneButton, 4, 2);
+			gridPane.add(doneButton, 5, 2);
 			
-			encryptionStage.setScene(new Scene(gridPane, 1000, 125));
+			encryptionStage.setScene(new Scene(gridPane, 1150, 125));
 			
 			encryptionStage.setResizable(false);
 			
@@ -283,6 +300,7 @@ public class App extends Application {
 			passwordButton.setOnAction(new EventHandler<ActionEvent>() {
 	            public void handle(ActionEvent t) {
 	            	
+	            	//Validate password right here
 	            	model.setPassword(passwordText.getText());
 	            	
 	            	passwordStage.close();

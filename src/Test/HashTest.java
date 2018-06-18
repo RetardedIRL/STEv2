@@ -3,7 +3,7 @@ package Test;
 import org.junit.Test;
 
 import Enums.HashFunction;
-import src.CryptoManager;
+import logic.CryptoManager;
 
 public class HashTest {
 

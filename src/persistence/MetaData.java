@@ -19,8 +19,17 @@ public class MetaData {
 	String			hashValue;
 	byte[]			IV;
 	
+	byte[]			key;
 	String			password;
 	
+	
+	public void setKey(byte[] key) {
+		this.key = key;
+	}
+	
+	public byte[] getKey() {
+		return this.key;
+	}
 	
 	public Operation getOperation() {
 		return operation;

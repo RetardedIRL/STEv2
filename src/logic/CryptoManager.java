@@ -1,4 +1,4 @@
-package src;
+package logic;
 
 import java.security.Key;
 import java.security.MessageDigest;
@@ -10,51 +10,76 @@ import javax.crypto.KeyGenerator;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
+import Enums.EncryptionMode;
 import Enums.EncryptionType;
 import Enums.HashFunction;
+import Enums.PaddingType;
 import persistence.MetaData;
 
 public class CryptoManager {
     
-    public static byte[][] encrypt(String input, MetaData meta) throws Exception {
+    public static byte[] encrypt(String input, MetaData meta) throws Exception {
 		
     	byte[] inputBytes = input.getBytes();
 		
 		if(meta.getEncryptionType() == EncryptionType.none) {
 			meta.setHashValue(generateHash(meta.getHashFunction(), inputBytes));
-			return new byte[][] {inputBytes, null};
+			return inputBytes;
 		}
-		
-		Key key = generateKey(meta);
-		
-		IvParameterSpec iv = getMatchingIV(meta);
-		
-		meta.setIV(iv.getIV());
-		
-		Cipher cipher = generateCipher(Cipher.ENCRYPT_MODE, meta, key, iv);
-		
-		byte[] ciphertext = applyCipher(cipher, input.getBytes());
-		
-		meta.setHashValue(generateHash(meta.getHashFunction(), ciphertext));
-		
-		return new byte[][] {ciphertext, key.getEncoded()};
+
+		if(!isValid(meta, input, meta.getEncryptionType().getBlockSize())) {
+				
+			System.out.println("input not valid");
+			meta.setKey(null);
+			return inputBytes;
+		}
+		else {
+			
+			Key key = generateKey(meta);
+			
+			IvParameterSpec iv = getMatchingIV(meta);
+			
+			if(meta.getEncryptionMode().requiresIV() > -1)
+				meta.setIV(iv.getIV());
+			
+			Cipher cipher = generateCipher(Cipher.ENCRYPT_MODE, meta, key, iv);
+				
+			byte[] ciphertext = applyCipher(cipher, input.getBytes());
+			
+			meta.setHashValue(generateHash(meta.getHashFunction(), ciphertext));
+			meta.setKey(key.getEncoded());
+			
+			return ciphertext;
+		}
 	}
     
-    public static String decrypt(byte[] input, MetaData meta, byte[] key) throws Exception {
+    public static String decrypt(byte[] input, MetaData meta) throws Exception {
 		
+    	byte[] key = meta.getKey();
     	byte[] inputBytes = input;
 		
-    	validateHash(meta.getHashFunction(), inputBytes, meta.getHashValue());
-    	
+    	if(meta.getHashValue() != null)
+    		validateHash(meta.getHashFunction(), inputBytes, meta.getHashValue());
+    	else
+    		System.out.println("Hash empty");
 		if(meta.getEncryptionType() == EncryptionType.none) {
-			return Base64.getEncoder().encodeToString(inputBytes);
+			return new String(inputBytes, "UTF-8");
 		}
 		
-		IvParameterSpec iv = new IvParameterSpec(meta.getIV());
-		
-		Cipher cipher = generateCipher(Cipher.DECRYPT_MODE, meta, new SecretKeySpec(key, "BC"), iv);
-		
-		return new String(applyCipher(cipher, input), "UTF-8");
+		if(isValid(meta, new String(input, "UTF-8"), meta.getEncryptionType().getBlockSize())) {
+			IvParameterSpec iv = null;
+			
+			if(meta.getEncryptionMode().requiresIV() > -1)
+				iv = new IvParameterSpec(meta.getIV());
+			
+			Cipher cipher = generateCipher(Cipher.DECRYPT_MODE, meta, new SecretKeySpec(key, "BC"), iv);
+			
+			return new String(applyCipher(cipher, input), "UTF-8");
+    	}
+		else {
+			System.out.println("Not cool");
+			return new String(input, "UTF-8");
+		}
 	}
 
     private static IvParameterSpec getMatchingIV(MetaData meta) {
@@ -135,6 +160,10 @@ public class CryptoManager {
 
 	public static String generateHash(HashFunction hashFunction, byte[] input) throws Exception
 	{
+		if(hashFunction == HashFunction.NONE) {
+			System.out.println("test");
+			return "";
+		}
 		MessageDigest hash = MessageDigest.getInstance(hashFunction.toString(), "BC");
 		hash.update(input);
 		
@@ -142,12 +171,26 @@ public class CryptoManager {
 	}
 
 	//TODO: private static
-	public static void validateHash(HashFunction hashFunction, byte[] input, String readHash) throws Exception
+	public static void validateHash(HashFunction hashFunction, byte[] input, String read) throws Exception
 	{
+		if(hashFunction == HashFunction.NONE) {
+			if(!read.equals(""))
+				throw new Exception("Fuck you");
+		}
+
 		//Compare the two hashes using a message digest helper function
-		if(!MessageDigest.isEqual(Base64.getDecoder().decode(readHash) , Base64.getDecoder().decode(generateHash(hashFunction, input))))
+		if(!MessageDigest.isEqual(Base64.getDecoder().decode(read) , Base64.getDecoder().decode(generateHash(hashFunction, input))))
 		{
 			throw new Exception("File has been altered!");
 		}
+	}
+
+	private static boolean isValid(MetaData meta, String input, int blockSize) {
+		
+		if(meta.getEncryptionMode() == EncryptionMode.ECB || meta.getEncryptionMode() == EncryptionMode.CBC)
+			if(meta.getPaddingType() == PaddingType.NoPadding && (input.getBytes().length % blockSize) != 0)
+				return false;
+		
+		return true;
 	}
 }

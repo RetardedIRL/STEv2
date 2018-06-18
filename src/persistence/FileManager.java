@@ -1,5 +1,6 @@
-package src;
+package persistence;
 
+import logic.CryptoManager;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -40,7 +41,7 @@ public class FileManager {
 			e.printStackTrace();
 		}
 			
-		return CryptoManager.decrypt(byteArray, meta, keyBytes);
+		return CryptoManager.decrypt(byteArray, meta);
 
 	}
 	
@@ -60,7 +61,7 @@ public class FileManager {
 			
 			BufferedOutputStream bufferedOutput = new BufferedOutputStream(fileOutput);
 			
-			byte[][] output = CryptoManager.encrypt(input, meta);
+			byte[] output = CryptoManager.encrypt(input, meta);
 		
             Files.setAttribute(file.toPath(), "user:Encryption", meta.getEncryptionType().toString().getBytes());
             Files.setAttribute(file.toPath(), "user:Mode", meta.getEncryptionMode().toString().getBytes());
@@ -75,9 +76,7 @@ public class FileManager {
             	
             	BufferedOutputStream safetyBufferedOutput = new BufferedOutputStream(safetyFileOutput);
             	
-            	safetyBufferedOutput.write(output[1]);
-            	
-            	System.out.println(Base64.getEncoder().encodeToString(output[1]));
+            	safetyBufferedOutput.write(meta.getKey());
             	
             	safetyBufferedOutput.close();
             }
@@ -89,7 +88,7 @@ public class FileManager {
             	System.out.println("IV = null");
             
             // write text
-         	bufferedOutput.write(output[0]);
+         	bufferedOutput.write(output);
          			
 			bufferedOutput.close();
 			
