@@ -206,6 +206,8 @@ public class App extends Application {
 	            	
 	            	encryptionBox.getItems().setAll(EncryptionType.getValuesByOperation(operationBox.getValue()));
 	            	modeBox.getItems().setAll(EncryptionMode.getModeByOperation(operationBox.getValue()));
+	            	
+	            	model.getCurrentMeta().setOperation(operationBox.getValue());
 	            }
 			});
 			
@@ -290,10 +292,10 @@ public class App extends Application {
 			gridPane.add(passwordText, 0, 0);
 			gridPane.add(passwordButton, 1, 0);
 			
-			gridPane.setHalignment(passwordText, HPos.CENTER);
-			gridPane.setHalignment(passwordButton, HPos.LEFT);
+			GridPane.setHalignment(passwordText, HPos.CENTER);
+			GridPane.setHalignment(passwordButton, HPos.LEFT);
 			
-			gridPane.setMargin(passwordText, new Insets(10));
+			GridPane.setMargin(passwordText, new Insets(10));
 			
 			passwordStage.setScene(new Scene(gridPane, 270, 50));
 		}

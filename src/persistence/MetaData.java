@@ -1,5 +1,6 @@
 package persistence;
 
+import Enums.Operation;
 import Enums.EncryptionType;
 import Enums.EncryptionMode;
 import Enums.PaddingType;
@@ -9,6 +10,7 @@ import Enums.HashFunction;
 
 public class MetaData {
 
+	Operation		operation;
 	EncryptionType 	encryption;
 	EncryptionMode 	mode;
 	PaddingType		padding;
@@ -19,6 +21,13 @@ public class MetaData {
 	
 	String			password;
 	
+	
+	public Operation getOperation() {
+		return operation;
+	}
+	public void setOperation(Operation operation) {
+		this.operation = operation;
+	}
 	
 	public String getPassword() {
 		return password;

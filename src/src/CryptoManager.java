@@ -3,6 +3,7 @@ package src;
 import java.security.Key;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
+import java.util.Base64;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
@@ -46,7 +47,7 @@ public class CryptoManager {
     	validateHash(meta.getHashFunction(), inputBytes, meta.getHashValue());
     	
 		if(meta.getEncryptionType() == EncryptionType.none) {
-			return new String(inputBytes, "UTF-8");
+			return Base64.getEncoder().encodeToString(inputBytes);
 		}
 		
 		IvParameterSpec iv = new IvParameterSpec(meta.getIV());
@@ -134,27 +135,19 @@ public class CryptoManager {
 
 	public static String generateHash(HashFunction hashFunction, byte[] input) throws Exception
 	{
-		if(hashFunction != HashFunction.NONE)
-		{
-			MessageDigest hash = MessageDigest.getInstance(hashFunction.toString(), "BC");
-			hash.update(input);
+		MessageDigest hash = MessageDigest.getInstance(hashFunction.toString(), "BC");
+		hash.update(input);
 		
-			return new String(hash.digest(), "UTF-8");
-		}
-		return null;
+		return Base64.getEncoder().encodeToString(hash.digest());
 	}
 
-	public static void validateHash(HashFunction hashFunction, byte[] input, String read) throws Exception
+	//TODO: private static
+	public static void validateHash(HashFunction hashFunction, byte[] input, String readHash) throws Exception
 	{
-		if(hashFunction != HashFunction.NONE)
+		//Compare the two hashes using a message digest helper function
+		if(!MessageDigest.isEqual(Base64.getDecoder().decode(readHash) , Base64.getDecoder().decode(generateHash(hashFunction, input))))
 		{
-			MessageDigest hash = MessageDigest.getInstance(hashFunction.toString(), "BC");
-			hash.update(input);
-			
-			if(!MessageDigest.isEqual(read.getBytes() , hash.digest()))
-			{
-				throw new Exception("File has been corrupted/altered");
-			}
+			throw new Exception("File has been altered!");
 		}
 	}
 }

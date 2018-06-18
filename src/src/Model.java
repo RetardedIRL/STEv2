@@ -51,7 +51,7 @@ public class Model {
 	}
 	
 	private String asString(File file, String value) throws Exception {
-		return new String((byte[])Files.getAttribute(file.toPath(), value), "utf-8");
+		return new String((byte[])Files.getAttribute(file.toPath(), value));
 	}
 	
 	/**

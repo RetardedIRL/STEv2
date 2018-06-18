@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.Base64;
 
 import Enums.EncryptionType;
 import persistence.MetaData;
@@ -61,9 +62,9 @@ public class FileManager {
 			
 			byte[][] output = CryptoManager.encrypt(input, meta);
 		
-            Files.setAttribute(file.toPath(), "user:Encryption", meta.getEncryptionType().toString().getBytes("UTF-8"));
-            Files.setAttribute(file.toPath(), "user:Mode", meta.getEncryptionMode().toString().getBytes("UTF-8"));
-            Files.setAttribute(file.toPath(), "user:Padding", meta.getPaddingType().toString().getBytes("UTF-8"));
+            Files.setAttribute(file.toPath(), "user:Encryption", meta.getEncryptionType().toString().getBytes());
+            Files.setAttribute(file.toPath(), "user:Mode", meta.getEncryptionMode().toString().getBytes());
+            Files.setAttribute(file.toPath(), "user:Padding", meta.getPaddingType().toString().getBytes());
             
             // Write key to safety file
             if(meta.getEncryptionType() != EncryptionType.none) {
@@ -76,7 +77,7 @@ public class FileManager {
             	
             	safetyBufferedOutput.write(output[1]);
             	
-            	System.out.println(new String(output[1], "UTF-8"));
+            	System.out.println(Base64.getEncoder().encodeToString(output[1]));
             	
             	safetyBufferedOutput.close();
             }
