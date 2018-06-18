@@ -14,7 +14,6 @@ public enum EncryptionType {
 			
 		case Password:
 			return new EncryptionType[] {PBEWithSHAAnd128BitAES_CBC_BC, PBEWithMD5AndDES, PBEWithSHAAnd40BitRC4};
-			
 		default:
 			return new EncryptionType[] {};
 		}

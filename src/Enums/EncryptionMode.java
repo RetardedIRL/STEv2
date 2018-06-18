@@ -1,7 +1,7 @@
 package Enums;
 
 public enum EncryptionMode {
-ECB, CBC, CTR, OFB, CFB8;
+None, ECB, CBC, CTR, OFB, CFB8;
 
 	public int requiresIV() {
 	
@@ -13,5 +13,21 @@ ECB, CBC, CTR, OFB, CFB8;
 		
 		//ECB
 		return -1;
+	}
+	
+	public static EncryptionMode[] getModeByOperation(Operation operation) {
+		
+		switch(operation) {
+		
+			case Symmetric:
+			case Password:
+				return new EncryptionMode[] {ECB, CBC, CTR, OFB, CFB8};
+			
+			case Asymmetric:
+				return new EncryptionMode[] {None};
+			
+			default:
+				return new EncryptionMode[] {};
+		}
 	}
 }

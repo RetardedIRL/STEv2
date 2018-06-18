@@ -27,6 +27,10 @@ public class Model {
 		this.textArea = textArea;
 	}
 	
+	public void setPassword(String input) {
+		currentMeta.setPassword(input);
+	}
+	
 	private void loadMetaData(File file) {
 		try {
 			MetaData openedData = new MetaData();

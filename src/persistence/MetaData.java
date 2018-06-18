@@ -17,6 +17,15 @@ public class MetaData {
 	String			hashValue;
 	byte[]			IV;
 	
+	String			password;
+	
+	
+	public String getPassword() {
+		return password;
+	}
+	public void setPassword(String password) {
+		this.password = password;
+	}
 	
 	public MetaData() {}
 	public MetaData(EncryptionType encryption, EncryptionMode mode, PaddingType padding, HashFunction hashFunction, String hashValue) {
