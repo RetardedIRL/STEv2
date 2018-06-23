@@ -2,8 +2,13 @@ package logic;
 
 import java.io.UnsupportedEncodingException;
 import java.security.Key;
+import java.security.KeyFactory;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.security.MessageDigest;
+import java.security.PrivateKey;
 import java.security.SecureRandom;
+import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Base64;
 
 import javax.crypto.Cipher;
@@ -15,6 +20,7 @@ import Enums.EncryptionMode;
 import Enums.EncryptionType;
 import Enums.HashFunction;
 import Enums.PaddingType;
+import persistence.FileManager;
 import persistence.MetaData;
 
 public class CryptoManager {
@@ -37,21 +43,41 @@ public class CryptoManager {
 			}
 			else {
 				
-				Key key = generateKey(meta);
+				Cipher cipher = null;
+				Key key = null;
+				IvParameterSpec iv = null;
 				
-				IvParameterSpec iv = generateIvParameterSpec(meta);
+				switch(meta.getOperation()) {
 				
-				if(!meta.getEncryptionMode().getType().equals("block"))
-					meta.setIV(iv.getIV());
-				
-				Cipher cipher = generateCipher(Cipher.ENCRYPT_MODE, meta, key, iv);
+				case Symmetric:
+					key = generateKey(meta);
+					iv = generateIvParameterSpec(meta);
 					
+					if(!meta.getEncryptionMode().getType().equals("block"))
+						meta.setIV(iv.getIV());
+					
+					cipher = generateCipher(Cipher.ENCRYPT_MODE, meta, key, iv);
+					
+					meta.setKey(key.getEncoded());
+					break;
+				case Asymmetric:
+					
+					SecureRandom rnd = new SecureRandom();
+					KeyPair keyPair = generateKeyPair(meta, rnd);
+					
+					key = keyPair.getPublic();
+					meta.setKey(keyPair.getPrivate().getEncoded());
+					
+					cipher = generateCipher(Cipher.ENCRYPT_MODE, key, rnd);
+					break;
+				default:
+					break;
+				}
+				
 				byte[] ciphertext = applyCipher(cipher, input.getBytes());
 				
-				meta.setHashValue(generateHash(meta.getHashFunction(), ciphertext));
-				meta.setKey(key.getEncoded());
-				
 				meta.setText(ciphertext);
+				meta.setHashValue(generateHash(meta.getHashFunction(), ciphertext));
 			}
 		}
 		else {
@@ -69,12 +95,29 @@ public class CryptoManager {
 	    	if(meta.getHashValue() != null)
 	    		if(isHashValid(meta.getHashFunction(), inputBytes, meta.getHashValue()))
 					if(isValid(meta)) {
+						
 						IvParameterSpec iv = null;
 						
 						if(!meta.getEncryptionMode().getType().equals("block"))
 							iv = new IvParameterSpec(meta.getIV());
 						
-						Cipher cipher = generateCipher(Cipher.DECRYPT_MODE, meta, new SecretKeySpec(key, "BC"), iv);
+						Cipher cipher = null;
+						switch(meta.getOperation()) {
+						
+							case Symmetric:
+								cipher = generateCipher(Cipher.DECRYPT_MODE, meta, new SecretKeySpec(key, "BC"), iv);
+								break;
+							case Asymmetric:
+								cipher = Cipher.getInstance("RSA/None/NoPadding", "BC");
+								
+								PKCS8EncodedKeySpec privKeySpec = new PKCS8EncodedKeySpec(key);
+								PrivateKey privKey = KeyFactory.getInstance("RSA", "BC").generatePrivate(privKeySpec);
+								
+								cipher.init(Cipher.DECRYPT_MODE, privKey);
+								break;
+							default:
+								break;
+						}
 						
 						meta.setText(cutLeftovers(applyCipher(cipher, meta.getText())));
 			    	}
@@ -132,6 +175,14 @@ public class CryptoManager {
     	return cipher;
     }
     
+    private static Cipher generateCipher(int mode, Key key, SecureRandom rnd) throws Exception {
+    	Cipher cipher = Cipher.getInstance("RSA/None/NoPadding", "BC");
+    	
+    	cipher.init(mode, key, rnd);
+    	
+    	return cipher;
+    }
+    
     private static byte[] applyCipher(Cipher cipher, byte[] input) throws Exception
 	{
 		byte[] output = new byte[cipher.getOutputSize(input.length)];
@@ -158,6 +209,16 @@ public class CryptoManager {
 		return generator.generateKey();
 	}
 
+	private static KeyPair generateKeyPair(MetaData meta, SecureRandom rnd) throws Exception {
+		
+		KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA", "BC");
+		
+		generator.initialize(meta.getKeyLength().asInt(), rnd);
+		
+		return generator.generateKeyPair();
+		
+	}
+	
 	public static String generateHash(HashFunction hashFunction, byte[] input) throws Exception
 	{
 		if(hashFunction == HashFunction.NONE) {

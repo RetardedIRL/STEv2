@@ -174,6 +174,9 @@ public class App extends Application {
 	            }
 			});
 			
+			paddingBox.setValue(PaddingType.NoPadding);
+			model.getCurrentMeta().setPaddingType(PaddingType.NoPadding);
+			
 			ComboBox<EncryptionMode> modeBox = new ComboBox<EncryptionMode>();
 			modeBox.setOnAction(new EventHandler<ActionEvent>() {
 	            public void handle(ActionEvent t) {
@@ -184,6 +187,9 @@ public class App extends Application {
 	            }
 			});
 			
+			modeBox.setValue(EncryptionMode.ECB);
+			model.getCurrentMeta().setEncryptionMode(EncryptionMode.ECB);
+			
 			ComboBox<KeyLength> keyLengthBox = new ComboBox<KeyLength>();
 			keyLengthBox.setOnAction(new EventHandler<ActionEvent>() {
 	            public void handle(ActionEvent t) {
@@ -192,6 +198,9 @@ public class App extends Application {
 	            	model.getCurrentMeta().setKeyLength(keyLengthBox.getValue());
 	            }
 			});
+			
+			keyLengthBox.setValue(KeyLength.x64);
+			model.getCurrentMeta().setKeyLength(KeyLength.x64);
 			
 			ComboBox<EncryptionType> encryptionBox = new ComboBox<EncryptionType>();
 			encryptionBox.setOnAction(new EventHandler<ActionEvent>() {
@@ -205,17 +214,70 @@ public class App extends Application {
 	            }
 			});
 			
+			encryptionBox.setValue(EncryptionType.DES);
+			model.getCurrentMeta().setEncryptionType(EncryptionType.DES);
+			
+			
 			ComboBox<Operation> operationBox = new ComboBox<Operation>();
 			operationBox.setOnAction(new EventHandler<ActionEvent>() {
 	            public void handle(ActionEvent t) {
 	            	
-	            	encryptionBox.getItems().setAll(EncryptionType.getValuesByOperation(operationBox.getValue()));
-	            	modeBox.getItems().setAll(EncryptionMode.getModeByOperation(operationBox.getValue()));
+	            	Operation operation = operationBox.getValue();
 	            	
+	            	switch(operation) {
+	            	
+	            	case Symmetric:
+	            		
+            			encryptionBox.getItems().setAll(EncryptionType.getValuesByOperation(Operation.Symmetric));
+            			modeBox.getItems().setAll(EncryptionMode.getModeByOperation(Operation.Symmetric));
+            			
+            			encryptionBox.setValue(EncryptionType.DES);
+            			encryptionBox.setDisable(false);
+            			
+            			modeBox.setValue(EncryptionMode.ECB);
+            			modeBox.setDisable(false);
+            			
+            			paddingBox.setValue(PaddingType.NoPadding);
+            			paddingBox.setDisable(false);
+            			
+            			keyLengthBox.setValue(KeyLength.x64);
+	            		break;
+	            		
+	            	case Asymmetric:
+	            		
+            			encryptionBox.setValue(EncryptionType.RSA);
+            			encryptionBox.setDisable(true);
+            			
+            			modeBox.setValue(EncryptionMode.None);
+            			modeBox.setDisable(true);
+            			
+            			paddingBox.setValue(PaddingType.NoPadding);
+            			paddingBox.setDisable(true);
+            			
+            			keyLengthBox.setValue(KeyLength.x1024);
+            			break;
+            			
+	            	case Password:
+	            		/*
+	            		encryptionBox.getItems().setAll(EncryptionType.getValuesByOperation(Operation.Password));
+	            		encryptionBox.setValue(EncryptionType.PBEWithMD5AndDES);
+	            		encryptionBox.setDisable(false);
+	            		*/
+	            		
+	            		//--------------------------------------------------------------- TODO ---------------------------------------------------------------
+	            		
+	            		break;
+	            		
+	            	default:
+	            		break;
+	            	}
+
 	            	model.getCurrentMeta().setOperation(operationBox.getValue());
 	            }
 			});
 			
+			operationBox.setValue(Operation.Symmetric);
+			model.getCurrentMeta().setOperation(Operation.Symmetric);
 			operationBox.getItems().addAll(Operation.values());
 			
 			ComboBox<HashFunction> hashFBox = new ComboBox<HashFunction>();
@@ -226,6 +288,8 @@ public class App extends Application {
 	            }
 			});
 			
+			hashFBox.setValue(HashFunction.NONE);
+			model.getCurrentMeta().setHashFunction(HashFunction.NONE);
 			hashFBox.getItems().addAll(HashFunction.values());
 			
 			GridPane.setHalignment(operationBox, HPos.CENTER);

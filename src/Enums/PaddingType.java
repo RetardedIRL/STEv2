@@ -16,6 +16,8 @@ public enum PaddingType {
 			
 			return new PaddingType[] {NoPadding, PKCS7Padding, ZeroBytePadding};
 		
+		if( mode == EncryptionMode.None)
+			return new PaddingType[] {NoPadding};
 		
 		return new PaddingType[] {};
 	}

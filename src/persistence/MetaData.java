@@ -2,6 +2,9 @@ package persistence;
 
 import Enums.Operation;
 import Enums.EncryptionType;
+
+import java.security.KeyPair;
+
 import Enums.EncryptionMode;
 import Enums.PaddingType;
 import Enums.KeyLength;
@@ -19,10 +22,15 @@ public class MetaData {
 	String			hashValue;
 	byte[]			IV;
 	
+	//Symmetric | Private key
 	byte[]			key;
+
+	
+	//PBE
 	String			password;
 	
 	byte[]			text;
+
 	
 	public void setText(byte[] text) {
 		this.text = text;
