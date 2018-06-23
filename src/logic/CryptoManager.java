@@ -1,5 +1,6 @@
 package logic;
 
+import java.io.UnsupportedEncodingException;
 import java.security.Key;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
@@ -18,103 +19,102 @@ import persistence.MetaData;
 
 public class CryptoManager {
     
-    public static byte[] encrypt(String input, MetaData meta) throws Exception {
+	
+	public static byte[] cipherIVTemplate = {0x00, 0x00, 0x00, 0x01};
+	
+    public static void encrypt(String input, MetaData meta) throws Exception {
 		
     	byte[] inputBytes = input.getBytes();
 		
-		if(meta.getEncryptionType() == EncryptionType.none) {
+    	meta.setText(inputBytes);
+    	
+		if(meta.getEncryptionType() != EncryptionType.none) {	
+
+			if(!isValid(meta)) {
+				
+				meta.setHashValue(generateHash(meta.getHashFunction(), inputBytes));
+				meta.setKey(null);
+			}
+			else {
+				
+				Key key = generateKey(meta);
+				
+				IvParameterSpec iv = generateIvParameterSpec(meta);
+				
+				if(!meta.getEncryptionMode().getType().equals("block"))
+					meta.setIV(iv.getIV());
+				
+				Cipher cipher = generateCipher(Cipher.ENCRYPT_MODE, meta, key, iv);
+					
+				byte[] ciphertext = applyCipher(cipher, input.getBytes());
+				
+				meta.setHashValue(generateHash(meta.getHashFunction(), ciphertext));
+				meta.setKey(key.getEncoded());
+				
+				meta.setText(ciphertext);
+			}
+		}
+		else {
 			meta.setHashValue(generateHash(meta.getHashFunction(), inputBytes));
-			return inputBytes;
-		}
-
-		if(!isValid(meta, input, meta.getEncryptionType().getBlockSize())) {
-				
-			System.out.println("input not valid");
-			meta.setKey(null);
-			return inputBytes;
-		}
-		else {
-			
-			Key key = generateKey(meta);
-			
-			IvParameterSpec iv = getMatchingIV(meta);
-			
-			if(meta.getEncryptionMode().requiresIV() > -1)
-				meta.setIV(iv.getIV());
-			
-			Cipher cipher = generateCipher(Cipher.ENCRYPT_MODE, meta, key, iv);
-				
-			byte[] ciphertext = applyCipher(cipher, input.getBytes());
-			
-			meta.setHashValue(generateHash(meta.getHashFunction(), ciphertext));
-			meta.setKey(key.getEncoded());
-			
-			return ciphertext;
 		}
 	}
     
-    public static String decrypt(byte[] input, MetaData meta) throws Exception {
+    public static void decrypt(MetaData meta) throws Exception {
 		
-    	byte[] key = meta.getKey();
-    	byte[] inputBytes = input;
-		
-    	if(meta.getHashValue() != null)
-    		validateHash(meta.getHashFunction(), inputBytes, meta.getHashValue());
-    	else
-    		System.out.println("Hash empty");
-		if(meta.getEncryptionType() == EncryptionType.none) {
-			return new String(inputBytes, "UTF-8");
-		}
-		
-		if(isValid(meta, new String(input, "UTF-8"), meta.getEncryptionType().getBlockSize())) {
-			IvParameterSpec iv = null;
+    	if(meta.getEncryptionType() != EncryptionType.none) {
+    	
+	    	byte[] key = meta.getKey();
+	    	byte[] inputBytes = meta.getText();
 			
-			if(meta.getEncryptionMode().requiresIV() > -1)
-				iv = new IvParameterSpec(meta.getIV());
-			
-			Cipher cipher = generateCipher(Cipher.DECRYPT_MODE, meta, new SecretKeySpec(key, "BC"), iv);
-			
-			return new String(applyCipher(cipher, input), "UTF-8");
-    	}
-		else {
-			System.out.println("Not cool");
-			return new String(input, "UTF-8");
-		}
-	}
+	    	if(meta.getHashValue() != null)
+	    		if(isHashValid(meta.getHashFunction(), inputBytes, meta.getHashValue()))
+					if(isValid(meta)) {
+						IvParameterSpec iv = null;
+						
+						if(!meta.getEncryptionMode().getType().equals("block"))
+							iv = new IvParameterSpec(meta.getIV());
+						
+						Cipher cipher = generateCipher(Cipher.DECRYPT_MODE, meta, new SecretKeySpec(key, "BC"), iv);
+						
+						meta.setText(cutLeftovers(applyCipher(cipher, meta.getText())));
+			    	}
+    			}
+	    	else
+	    		System.out.println("Hash empty, hash function should be NONE"); 	
+}
+    
+    private static IvParameterSpec generateIvParameterSpec(MetaData meta) {
+    	
+    	int length = meta.getEncryptionType().getBlockSize();
 
-    private static IvParameterSpec getMatchingIV(MetaData meta) {
-    	
-    	switch(meta.getEncryptionMode().requiresIV()) {
-    	
-    	//no IV
-    	case -1: 
-    		return null;
-    		
-    	//inline IV
-    	case 0:
-    		return generateIvParameterSpec(meta.getEncryptionType().getIVSize());
-    
-    	//stream cipher IV
-    	case 1:
-    		
-    		//TEMP
-    		return new IvParameterSpec(new byte[] {0x13 , 0x12 ,0x11 ,0x10 ,0x09 ,0x08 ,0x07 ,0x06 ,0x05, 0x04, 0x03, 0x02, 0x01, 0x00, 0x00, 0x01});
-    	
-    	default:
-    		return null;
-    	}
-    }
-    
-    private static IvParameterSpec generateIvParameterSpec(int length) {
-    	
     	IvParameterSpec ivSpec = null;
     	
     	if(length > 0) {
+    		
     		SecureRandom rnd = new SecureRandom();
     		
     		byte[] ivBytes = new byte[length];
     		
-    		rnd.nextBytes(ivBytes);
+    		switch(meta.getEncryptionMode().getType()) {
+    		
+    		case "block":
+    			return null;
+    			
+    		case "ivBlock":
+	    		rnd.nextBytes(ivBytes);
+	    		break;
+	    		
+    		case "stream":
+    			byte[] cipherIVRandom = new byte[length-4];
+    			rnd.nextBytes(cipherIVRandom);
+    			
+    			System.arraycopy(cipherIVRandom, 0, ivBytes, 0, cipherIVRandom.length);
+    			System.arraycopy(cipherIVTemplate, 0, ivBytes, length-4, cipherIVTemplate.length);
+    			break;
+    			
+    		default:
+    			break;
+    		}
     		
     		ivSpec = new IvParameterSpec(ivBytes);
     	}
@@ -161,7 +161,6 @@ public class CryptoManager {
 	public static String generateHash(HashFunction hashFunction, byte[] input) throws Exception
 	{
 		if(hashFunction == HashFunction.NONE) {
-			System.out.println("test");
 			return "";
 		}
 		MessageDigest hash = MessageDigest.getInstance(hashFunction.toString(), "BC");
@@ -171,11 +170,13 @@ public class CryptoManager {
 	}
 
 	//TODO: private static
-	public static void validateHash(HashFunction hashFunction, byte[] input, String read) throws Exception
+	public static boolean isHashValid(HashFunction hashFunction, byte[] input, String read) throws Exception
 	{
 		if(hashFunction == HashFunction.NONE) {
 			if(!read.equals(""))
-				throw new Exception("Fuck you");
+				return false;
+			
+			return true;
 		}
 
 		//Compare the two hashes using a message digest helper function
@@ -183,14 +184,31 @@ public class CryptoManager {
 		{
 			throw new Exception("File has been altered!");
 		}
-	}
-
-	private static boolean isValid(MetaData meta, String input, int blockSize) {
-		
-		if(meta.getEncryptionMode() == EncryptionMode.ECB || meta.getEncryptionMode() == EncryptionMode.CBC)
-			if(meta.getPaddingType() == PaddingType.NoPadding && (input.getBytes().length % blockSize) != 0)
-				return false;
 		
 		return true;
+	}
+
+	private static boolean isValid(MetaData meta) {
+		
+		if(meta.getEncryptionMode() == EncryptionMode.ECB || meta.getEncryptionMode() == EncryptionMode.CBC || meta.getEncryptionMode() == EncryptionMode.CTS)
+			if(meta.getPaddingType() == PaddingType.NoPadding && (meta.getText().length % meta.getEncryptionType().getBlockSize()) != 0) {
+				System.out.println("Input bytes not compatible with block size.");
+				return false;
+			}
+		
+		return true;
+	}
+	
+	private static byte[] cutLeftovers(byte[] inputBytes) {
+		
+		
+		try {
+			return new String(inputBytes, "UTF-8").trim().getBytes();
+		} catch (UnsupportedEncodingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		return null;
 	}
 }

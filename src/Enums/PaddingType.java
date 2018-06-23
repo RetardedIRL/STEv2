@@ -5,7 +5,7 @@ public enum PaddingType {
 	
 	public static PaddingType[] getPaddingByMode(EncryptionMode mode) {
 		
-		if(	mode == EncryptionMode.CTR ||
+		if(	mode == EncryptionMode.CTS ||
 			mode == EncryptionMode.OFB ||
 			mode == EncryptionMode.CFB8)
 			

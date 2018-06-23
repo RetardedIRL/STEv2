@@ -19,22 +19,13 @@ public enum EncryptionType {
 		}
 	}
 	
-	public int getIVSize() {
-		
-		if(this == DES)
-			return 8;
-		if(this == AES)
-			return 16;
-		
-		return 0;
-	}
-	
 	public int getBlockSize() {
+		
 		if(this == DES)
 			return 8;
-		if(this == AES)
+		else if(this == AES)
 			return 16;
-		
-		return 0;
+		else
+			return 0;
 	}
 }

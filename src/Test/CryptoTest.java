@@ -19,27 +19,6 @@ import static org.junit.Assert.assertEquals;
 public class CryptoTest {
 
 	@Test
-	public void testEncryptDecrypt() {
-		
-		String input = "test";
-		EncryptionType encryption = EncryptionType.AES;
-		EncryptionMode mode = EncryptionMode.CFB8;
-		PaddingType padding = PaddingType.NoPadding;
-		
-		MetaData testMeta = new MetaData();
-		
-		testMeta.setEncryptionType(encryption);
-		testMeta.setEncryptionMode(mode);
-		testMeta.setPaddingType(padding);
-		testMeta.setKeyLength(KeyLength.x128);
-		testMeta.setHashFunction(HashFunction.SHA1);
-
-		String cleartext = encryptionDecryption(testMeta, input);
-		
-		assertEquals(input, cleartext);
-	}
-	
-	@Test
 	public void testAllEncryptionTypes() {
 		
 		String input = "test";
@@ -52,18 +31,21 @@ public class CryptoTest {
 					
 					for(KeyLength keylength : KeyLength.getKeyLength(encryption)) {
 						
-						MetaData testMeta = new MetaData();
-						
-						testMeta.setEncryptionType(encryption);
-						testMeta.setEncryptionMode(mode);
-						testMeta.setPaddingType(padding);
-						testMeta.setKeyLength(keylength);
-						testMeta.setHashFunction(HashFunction.SHA1);
-						
-						String cleartext = encryptionDecryption(testMeta, input);
-						
-						System.out.println(encryption + ", " + mode + ", " + padding + ", " + keylength);
-						assertEquals(input, cleartext);
+						for(HashFunction hashFunction : HashFunction.values()) {
+							MetaData testMeta = new MetaData();
+							
+							testMeta.setEncryptionType(encryption);
+							testMeta.setEncryptionMode(mode);
+							testMeta.setPaddingType(padding);
+							testMeta.setKeyLength(keylength);
+							testMeta.setHashFunction(hashFunction);
+							
+							String cleartext = encryptionDecryption(testMeta, input);
+							
+							System.out.println(encryption + ", " + mode + ", " + padding + ", " + keylength + ", " + hashFunction);
+							System.out.println("----------------------------------------\n");
+							assertEquals(input, cleartext);
+						}
 					}
 				}
 			}
@@ -71,14 +53,18 @@ public class CryptoTest {
 	}
 	
 	public String encryptionDecryption(MetaData meta, String input) {
+		
+		System.out.println("----------------------------------------");
+		
 		try {
-			byte[] ciphertext = CryptoManager.encrypt(input, meta);
 			
-			String cleartext = CryptoManager.decrypt(ciphertext, meta);
+			CryptoManager.encrypt(input, meta);
 			
-			System.out.println(input + ", " + cleartext + ".");
+			CryptoManager.decrypt(meta);
+		
+			System.out.println(input + ", " + new String(meta.getText(), "UTF-8") + ".");
 			
-			return cleartext;
+			return new String(meta.getText(), "UTF-8");
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

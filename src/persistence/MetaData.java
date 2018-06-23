@@ -22,6 +22,15 @@ public class MetaData {
 	byte[]			key;
 	String			password;
 	
+	byte[]			text;
+	
+	public void setText(byte[] text) {
+		this.text = text;
+	}
+	
+	public byte[] getText() {
+		return text;
+	}
 	
 	public void setKey(byte[] key) {
 		this.key = key;

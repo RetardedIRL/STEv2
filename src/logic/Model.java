@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import Enums.EncryptionMode;
 import Enums.EncryptionType;
 import Enums.HashFunction;
+import Enums.KeyLength;
 import Enums.Operation;
 import Enums.PaddingType;
 import javafx.scene.control.TextArea;
@@ -40,6 +41,7 @@ public class Model {
 			openedData.setEncryptionType(EncryptionType.valueOf(asString(file, "user:Encryption")));
 			openedData.setEncryptionMode(EncryptionMode.valueOf(asString(file, "user:Mode")));
 			openedData.setPaddingType(PaddingType.valueOf(asString(file, "user:Padding")));
+			openedData.setKeyLength(KeyLength.valueOf(asString(file, "user:KeyLength")));
 			openedData.setHashFunction(HashFunction.valueOf(asString(file, "user:HashFunction")));
 			openedData.setHashValue(new String((byte[])Files.getAttribute(file.toPath(), "user:Hash")));
 			openedData.setIV(asString(file, "user:IV").getBytes());
