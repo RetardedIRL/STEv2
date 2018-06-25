@@ -7,7 +7,8 @@ public enum PaddingType {
 		
 		if(	mode == EncryptionMode.CTS ||
 			mode == EncryptionMode.OFB ||
-			mode == EncryptionMode.CFB8)
+			mode == EncryptionMode.CFB8||
+			mode == EncryptionMode.GCM)
 			
 			return new PaddingType[] {NoPadding};
 		

@@ -33,10 +33,10 @@ import javafx.scene.layout.RowConstraints;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 
+
 public class App extends Application {
 
 	private Stage encryptionStage;
-	private Stage passwordStage;
 	private Model model;
 	
 	public static void main(String[] args) {
@@ -50,7 +50,7 @@ public class App extends Application {
 	public void start(Stage stage) throws Exception {
 		
 		TextArea textArea = new TextArea();
-		
+
 		model = new Model(textArea);
 		
 		
@@ -63,7 +63,7 @@ public class App extends Application {
 		MenuItem menuItemNew = new MenuItem("New");
 		menuItemNew.setOnAction(new EventHandler<ActionEvent>() {
             public void handle(ActionEvent t) {
-            	//Model new
+            	model.newFile();
             }
         });
 		
@@ -217,6 +217,17 @@ public class App extends Application {
 			encryptionBox.setValue(EncryptionType.DES);
 			model.getCurrentMeta().setEncryptionType(EncryptionType.DES);
 			
+			ComboBox<HashFunction> hashFBox = new ComboBox<HashFunction>();
+			hashFBox.setOnAction(new EventHandler<ActionEvent>() {
+	            public void handle(ActionEvent t) {
+	            	
+	            	model.getCurrentMeta().setHashFunction(hashFBox.getValue());
+	            }
+			});
+			
+			hashFBox.setValue(HashFunction.NONE);
+			model.getCurrentMeta().setHashFunction(HashFunction.NONE);
+			hashFBox.getItems().addAll(HashFunction.values());
 			
 			ComboBox<Operation> operationBox = new ComboBox<Operation>();
 			operationBox.setOnAction(new EventHandler<ActionEvent>() {
@@ -241,6 +252,7 @@ public class App extends Application {
             			paddingBox.setDisable(false);
             			
             			keyLengthBox.setValue(KeyLength.x64);
+            			paddingBox.setDisable(false);
 	            		break;
 	            		
 	            	case Asymmetric:
@@ -255,17 +267,18 @@ public class App extends Application {
             			paddingBox.setDisable(true);
             			
             			keyLengthBox.setValue(KeyLength.x1024);
+            			keyLengthBox.setDisable(false);
             			break;
             			
 	            	case Password:
-	            		/*
+
 	            		encryptionBox.getItems().setAll(EncryptionType.getValuesByOperation(Operation.Password));
 	            		encryptionBox.setValue(EncryptionType.PBEWithMD5AndDES);
 	            		encryptionBox.setDisable(false);
-	            		*/
 	            		
-	            		//--------------------------------------------------------------- TODO ---------------------------------------------------------------
-	            		
+	            		modeBox.setDisable(true);
+	            		paddingBox.setDisable(true);
+	            		keyLengthBox.setDisable(true);
 	            		break;
 	            		
 	            	default:
@@ -280,17 +293,6 @@ public class App extends Application {
 			model.getCurrentMeta().setOperation(Operation.Symmetric);
 			operationBox.getItems().addAll(Operation.values());
 			
-			ComboBox<HashFunction> hashFBox = new ComboBox<HashFunction>();
-			hashFBox.setOnAction(new EventHandler<ActionEvent>() {
-	            public void handle(ActionEvent t) {
-	            	
-	            	model.getCurrentMeta().setHashFunction(hashFBox.getValue());
-	            }
-			});
-			
-			hashFBox.setValue(HashFunction.NONE);
-			model.getCurrentMeta().setHashFunction(HashFunction.NONE);
-			hashFBox.getItems().addAll(HashFunction.values());
 			
 			GridPane.setHalignment(operationBox, HPos.CENTER);
 			GridPane.setHalignment(encryptionBox, HPos.CENTER);
@@ -316,13 +318,8 @@ public class App extends Application {
 			Button doneButton = new Button("Done");
 			doneButton.setOnAction(new EventHandler<ActionEvent>() {
 	            public void handle(ActionEvent t) {
-	            	
-	            	boolean temp = operationBox.getValue() == Operation.Password;
-	            	
 	            	encryptionStage.close();
-	            	
-	            	if(temp)
-	            		openPasswordWindow();
+
 	            }
 			});
 			
@@ -338,51 +335,6 @@ public class App extends Application {
 			encryptionStage.setResizable(false);
 			
 		}
-		
 		encryptionStage.show();
 	}
-	
-	public void openPasswordWindow() {
-		
-		if(passwordStage == null) {
-			passwordStage = new Stage();
-			passwordStage.setTitle("Enter password");
-		
-			GridPane gridPane = new GridPane();
-			
-			gridPane.getColumnConstraints().add(new ColumnConstraints(200));
-			gridPane.getColumnConstraints().add(new ColumnConstraints(200));
-			
-			TextField passwordText = new TextField();
-			
-			passwordText.setPromptText("Enter password");
-			passwordText.setMinWidth(150);
-			
-			Button passwordButton = new Button("Done");
-			passwordButton.setMinWidth(50);
-			
-			passwordButton.setOnAction(new EventHandler<ActionEvent>() {
-	            public void handle(ActionEvent t) {
-	            	
-	            	//Validate password right here
-	            	model.setPassword(passwordText.getText());
-	            	
-	            	passwordStage.close();
-	            }
-			});
-			
-			gridPane.add(passwordText, 0, 0);
-			gridPane.add(passwordButton, 1, 0);
-			
-			GridPane.setHalignment(passwordText, HPos.CENTER);
-			GridPane.setHalignment(passwordButton, HPos.LEFT);
-			
-			GridPane.setMargin(passwordText, new Insets(10));
-			
-			passwordStage.setScene(new Scene(gridPane, 270, 50));
-		}
-		
-		passwordStage.show();
-	}
-
 }

@@ -13,12 +13,17 @@ import java.util.Base64;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
+import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.PBEKeySpec;
+import javax.crypto.spec.PBEParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import Enums.EncryptionMode;
 import Enums.EncryptionType;
 import Enums.HashFunction;
+import Enums.Operation;
 import Enums.PaddingType;
 import persistence.FileManager;
 import persistence.MetaData;
@@ -27,10 +32,11 @@ public class CryptoManager {
     
 	
 	public static byte[] cipherIVTemplate = {0x00, 0x00, 0x00, 0x01};
+	public static int iterationCount = 2048;
 	
     public static void encrypt(String input, MetaData meta) throws Exception {
 		
-    	byte[] inputBytes = input.getBytes();
+    	byte[] inputBytes = toByteArray(input);
 		
     	meta.setText(inputBytes);
     	
@@ -39,7 +45,7 @@ public class CryptoManager {
 			if(!isValid(meta)) {
 				
 				meta.setHashValue(generateHash(meta.getHashFunction(), inputBytes));
-				meta.setKey(null);
+				meta.setKey(new byte[] {});
 			}
 			else {
 				
@@ -60,6 +66,7 @@ public class CryptoManager {
 					
 					meta.setKey(key.getEncoded());
 					break;
+					
 				case Asymmetric:
 					
 					SecureRandom rnd = new SecureRandom();
@@ -70,11 +77,27 @@ public class CryptoManager {
 					
 					cipher = generateCipher(Cipher.ENCRYPT_MODE, key, rnd);
 					break;
+					
+				case Password:
+					SecureRandom rndSalt = new SecureRandom();
+					byte[] salt = new byte[meta.getEncryptionType().getBlockSize()];
+					
+					rndSalt.nextBytes(salt);
+					meta.setSalt(salt);
+					
+					SecretKeyFactory sKeyFactory = SecretKeyFactory.getInstance(meta.getEncryptionType().toString(), "BC");
+					//SecretKey sKey = sKeyFactory.generateSecret(new PBEKeySpec(meta.getPassword().toCharArray(), salt, iterationCount));
+					SecretKey sKey = sKeyFactory.generateSecret(new PBEKeySpec(meta.getPassword().toCharArray()));
+					
+					//cipher = generateCipher(Cipher.ENCRYPT_MODE, meta, sKey);
+					cipher = generateCipher(Cipher.ENCRYPT_MODE, meta, sKey, new PBEParameterSpec(salt, iterationCount));
+					break;
+					
 				default:
 					break;
 				}
 				
-				byte[] ciphertext = applyCipher(cipher, input.getBytes());
+				byte[] ciphertext = applyCipher(cipher, inputBytes);
 				
 				meta.setText(ciphertext);
 				meta.setHashValue(generateHash(meta.getHashFunction(), ciphertext));
@@ -96,15 +119,15 @@ public class CryptoManager {
 	    		if(isHashValid(meta.getHashFunction(), inputBytes, meta.getHashValue()))
 					if(isValid(meta)) {
 						
-						IvParameterSpec iv = null;
-						
-						if(!meta.getEncryptionMode().getType().equals("block"))
-							iv = new IvParameterSpec(meta.getIV());
-						
 						Cipher cipher = null;
 						switch(meta.getOperation()) {
 						
 							case Symmetric:
+								IvParameterSpec iv = null;
+								
+								if(!meta.getEncryptionMode().getType().equals("block"))
+									iv = new IvParameterSpec(meta.getIV());
+								
 								cipher = generateCipher(Cipher.DECRYPT_MODE, meta, new SecretKeySpec(key, "BC"), iv);
 								break;
 							case Asymmetric:
@@ -115,6 +138,16 @@ public class CryptoManager {
 								
 								cipher.init(Cipher.DECRYPT_MODE, privKey);
 								break;
+								
+							case Password:
+								SecretKeyFactory sKeyFactory = SecretKeyFactory.getInstance(meta.getEncryptionType().toString(), "BC");
+								//SecretKey sKey = sKeyFactory.generateSecret(new PBEKeySpec(meta.getPassword().toCharArray(), meta.getSalt(), iterationCount));
+								SecretKey sKey = sKeyFactory.generateSecret(new PBEKeySpec(meta.getPassword().toCharArray()));
+								
+								//cipher = generateCipher(Cipher.DECRYPT_MODE, meta, sKey);
+								cipher = generateCipher(Cipher.DECRYPT_MODE, meta, sKey, new PBEParameterSpec(meta.getSalt(), iterationCount));
+								break;
+
 							default:
 								break;
 						}
@@ -124,7 +157,8 @@ public class CryptoManager {
     			}
 	    	else
 	    		System.out.println("Hash empty, hash function should be NONE"); 	
-}
+    }
+    
     
     private static IvParameterSpec generateIvParameterSpec(MetaData meta) {
     	
@@ -179,6 +213,15 @@ public class CryptoManager {
     	Cipher cipher = Cipher.getInstance("RSA/None/NoPadding", "BC");
     	
     	cipher.init(mode, key, rnd);
+    	
+    	return cipher;
+    }
+    
+    private static Cipher generateCipher(int mode, MetaData meta, Key key, PBEParameterSpec parameterSpec) throws Exception {
+    
+    	Cipher cipher = Cipher.getInstance(meta.getEncryptionType().toString(), "BC");
+    	
+    	cipher.init(mode, key, parameterSpec);
     	
     	return cipher;
     }
@@ -243,7 +286,8 @@ public class CryptoManager {
 		//Compare the two hashes using a message digest helper function
 		if(!MessageDigest.isEqual(Base64.getDecoder().decode(read) , Base64.getDecoder().decode(generateHash(hashFunction, input))))
 		{
-			throw new Exception("File has been altered!");
+			System.out.println("File has been altered");
+			return false;
 		}
 		
 		return true;
@@ -251,12 +295,20 @@ public class CryptoManager {
 
 	private static boolean isValid(MetaData meta) {
 		
-		if(meta.getEncryptionMode() == EncryptionMode.ECB || meta.getEncryptionMode() == EncryptionMode.CBC || meta.getEncryptionMode() == EncryptionMode.CTS)
-			if(meta.getPaddingType() == PaddingType.NoPadding && (meta.getText().length % meta.getEncryptionType().getBlockSize()) != 0) {
-				System.out.println("Input bytes not compatible with block size.");
+		if(meta.getOperation() != Operation.Password) {
+			
+			EncryptionMode mode = meta.getEncryptionMode();
+			
+			if(mode == EncryptionMode.ECB || mode == EncryptionMode.CBC || mode == EncryptionMode.CTS)
+				if(meta.getPaddingType() == PaddingType.NoPadding && (meta.getText().length % meta.getEncryptionType().getBlockSize()) != 0) {
+					System.out.println("Input bytes not compatible with block size.");
+					return false;
+				}
+			if(meta.getEncryptionMode() == EncryptionMode.GCM && meta.getEncryptionType() == EncryptionType.DES) {
+				System.out.println("GCM and DES are incompatible");
 				return false;
 			}
-		
+		}
 		return true;
 	}
 	
@@ -264,12 +316,24 @@ public class CryptoManager {
 		
 		
 		try {
-			return new String(inputBytes, "UTF-8").trim().getBytes();
+			return toByteArray(new String(inputBytes, "UTF-8").trim());
 		} catch (UnsupportedEncodingException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
 		return null;
+	}
+	
+	private static byte[] toByteArray(String string) {
+		byte[] bytes = new byte[string.length()];
+		char[] chars = string.toCharArray();
+		
+		for(int i = 0; i != chars.length; i++) {
+			
+			bytes[i] = (byte) chars[i];
+		}
+		
+		return bytes;
 	}
 }

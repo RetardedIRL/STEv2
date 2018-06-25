@@ -1,5 +1,6 @@
 package Test;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -14,7 +15,7 @@ public class HashTest {
 	public void testHashValidateHash() {
 		
 		for(HashFunction hashFunction : HashFunction.values()) {
-			byte[] input = new byte[] {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06,0x07};
+			byte[] input = new byte[] {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07};
 	
 			String hash = null;
 			
@@ -25,6 +26,22 @@ public class HashTest {
 			} catch(Exception e) {
 				fail();
 			}
+		}
+	}
+	
+	@Test
+	public void testTampering() {
+		byte[] input = new byte[] {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07};
+		
+		String hash = null;
+		
+		try {
+			hash = CryptoManager.generateHash(HashFunction.SHA1, input);
+			
+			input[4] = 0x09;
+			
+			assertFalse(CryptoManager.isHashValid(HashFunction.SHA1, input, hash));
+		} catch(Exception e) {
 		}
 	}
 }

@@ -1,15 +1,12 @@
 package logic;
 
+import presentation.PasswordDialog;
 import persistence.FileManager;
-import java.io.File;
-import java.nio.file.Files;
 
-import Enums.EncryptionMode;
-import Enums.EncryptionType;
-import Enums.HashFunction;
-import Enums.KeyLength;
+import java.io.File;
+import java.util.Optional;
+
 import Enums.Operation;
-import Enums.PaddingType;
 import javafx.scene.control.TextArea;
 import javafx.stage.FileChooser;
 import persistence.MetaData;
@@ -34,34 +31,17 @@ public class Model {
 		currentMeta.setPassword(input);
 	}
 	
-	private void loadMetaData(File file) {
-		try {
-			MetaData openedData = new MetaData();
-			openedData.setOperation(Operation.valueOf(asString(file, "user:Operation")));
-			openedData.setEncryptionType(EncryptionType.valueOf(asString(file, "user:Encryption")));
-			openedData.setEncryptionMode(EncryptionMode.valueOf(asString(file, "user:Mode")));
-			openedData.setPaddingType(PaddingType.valueOf(asString(file, "user:Padding")));
-			openedData.setKeyLength(KeyLength.valueOf(asString(file, "user:KeyLength")));
-			openedData.setHashFunction(HashFunction.valueOf(asString(file, "user:HashFunction")));
-			openedData.setHashValue(new String((byte[])Files.getAttribute(file.toPath(), "user:Hash")));
-			openedData.setIV(asString(file, "user:IV").getBytes());
-			currentMeta = openedData;
-			
-		}
-		catch (Exception e) 
-		{
-			e.printStackTrace();
-		}
-	}
-	
-	private String asString(File file, String value) throws Exception {
-		return new String((byte[])Files.getAttribute(file.toPath(), value));
+	public void newFile() {
+		
+		currentMeta = new MetaData();
+		this.textArea.setText("");
 	}
 	
 	/**
 	 * Method to open a file. Uses FileChooser and FileManager classes.
 	 */
 	public void open() {
+		
 		try {
 			FileChooser fileChooser = new FileChooser();
 			File file = fileChooser.showOpenDialog(null);
@@ -69,6 +49,15 @@ public class Model {
 			if(file != null) {
 				filePath = file.getAbsolutePath();
 				fileName = file.getName();
+				
+				//load MetaData
+				currentMeta = FileManager.loadMetaData(file);
+				
+				if(currentMeta.getOperation() == Operation.Password) {
+					PasswordDialog pd = new PasswordDialog();
+				    Optional<String> result = pd.showAndWait();
+				    result.ifPresent(password -> currentMeta.setPassword(password));
+				}
 				
 				textArea.setText(FileManager.openFromPath(file, currentMeta));
 			}
@@ -88,6 +77,11 @@ public class Model {
 		if(fileName != null) {
 			File file = new File(filePath);
 			try {
+				if(currentMeta.getOperation() == Operation.Password) {
+					PasswordDialog pd = new PasswordDialog();
+				    Optional<String> result = pd.showAndWait();
+				    result.ifPresent(password -> currentMeta.setPassword(password));
+				}
 				FileManager.saveToPath(file, textArea.getText(), currentMeta);
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
@@ -118,6 +112,11 @@ public class Model {
 			fileName = file.getName();
 			
 			try {
+				if(currentMeta.getOperation() == Operation.Password) {
+					PasswordDialog pd = new PasswordDialog();
+				    Optional<String> result = pd.showAndWait();
+				    result.ifPresent(password -> currentMeta.setPassword(password));
+				}
 				FileManager.saveToPath(file, textArea.getText(), currentMeta);
 			} catch (Exception e) {
 				// TODO Auto-generated catch block

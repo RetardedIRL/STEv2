@@ -78,12 +78,30 @@ public class FileManager {
 			CryptoManager.encrypt(input, meta);
 			
 			Files.setAttribute(file.toPath(), "user:Operation", meta.getOperation().toString().getBytes());
-            Files.setAttribute(file.toPath(), "user:Encryption", meta.getEncryptionType().toString().getBytes());
-            Files.setAttribute(file.toPath(), "user:Mode", meta.getEncryptionMode().toString().getBytes());
-            Files.setAttribute(file.toPath(), "user:Padding", meta.getPaddingType().toString().getBytes());
-            Files.setAttribute(file.toPath(), "user:KeyLength", meta.getKeyLength().toString().getBytes());
-            Files.setAttribute(file.toPath(), "user:HashFunction", meta.getHashFunction().toString().getBytes());
-            Files.setAttribute(file.toPath(), "user:Hash", meta.getHashValue().toString().getBytes());
+			Files.setAttribute(file.toPath(), "user:Encryption", meta.getEncryptionType().toString().getBytes());
+			Files.setAttribute(file.toPath(), "user:HashFunction", meta.getHashFunction().toString().getBytes());
+			Files.setAttribute(file.toPath(), "user:Hash", meta.getHashValue().toString().getBytes());
+			
+			switch(meta.getOperation()) {
+			
+			case Symmetric:
+	            Files.setAttribute(file.toPath(), "user:Mode", meta.getEncryptionMode().toString().getBytes());
+	            Files.setAttribute(file.toPath(), "user:Padding", meta.getPaddingType().toString().getBytes());
+	            Files.setAttribute(file.toPath(), "user:KeyLength", meta.getKeyLength().toString().getBytes());
+	            Files.setAttribute(file.toPath(), "user:IV", meta.getIV());
+	            break;
+	            
+			case Asymmetric:
+				Files.setAttribute(file.toPath(), "user:KeyLength", meta.getKeyLength().toString().getBytes());
+				break;
+				
+			case Password:
+	            Files.setAttribute(file.toPath(), "user:Salt", meta.getSalt());
+	            break;
+	            
+	        default:
+	        	break;
+			}
             
             // Write key to safety file
             if(meta.getEncryptionType() != EncryptionType.none) {
@@ -92,16 +110,11 @@ public class FileManager {
             	
             	BufferedOutputStream safetyBufferedOutput = new BufferedOutputStream(safetyFileOutput);
             	
+            	//System.out.println(meta.toString());
             	safetyBufferedOutput.write(meta.getKey());
             	
             	safetyBufferedOutput.close();
             }
-            
-            // if IV then set that
-            if(meta.getIV() != null)
-            	Files.setAttribute(file.toPath(), "user:IV", meta.getIV());
-            else
-            	System.out.println("IV = null");
             
             // write text
          	bufferedOutput.write(meta.getText());
@@ -113,5 +126,52 @@ public class FileManager {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+	
+	public static MetaData loadMetaData(File file) {
+		try {
+			MetaData tempMeta = new MetaData();
+			
+			tempMeta.setOperation(Operation.valueOf(asString(file, "user:Operation")));
+			tempMeta.setEncryptionType(EncryptionType.valueOf(asString(file, "user:Encryption")));
+			tempMeta.setHashFunction(HashFunction.valueOf(asString(file, "user:HashFunction")));
+			tempMeta.setHashValue(new String((byte[])Files.getAttribute(file.toPath(), "user:Hash")));
+			
+			switch(tempMeta.getOperation()) {
+			
+			case Symmetric:
+				
+				tempMeta.setEncryptionMode(EncryptionMode.valueOf(asString(file, "user:Mode")));
+				tempMeta.setPaddingType(PaddingType.valueOf(asString(file, "user:Padding")));
+				tempMeta.setKeyLength(KeyLength.valueOf(asString(file, "user:KeyLength")));
+				tempMeta.setIV(asString(file, "user:IV").getBytes());
+				break;
+				
+			case Asymmetric:
+				
+				tempMeta.setKeyLength(KeyLength.valueOf(asString(file, "user:KeyLength")));
+				break;
+				
+			case Password:
+					
+				tempMeta.setSalt(asString(file, "user:Salt").getBytes());
+				break;
+				
+			default:
+				break;
+			}
+
+			return tempMeta;
+		}
+		catch (Exception e) 
+		{
+			e.printStackTrace();
+		}
+		
+		return null;
+	}
+	
+	private static String asString(File file, String value) throws Exception {
+		return new String((byte[])Files.getAttribute(file.toPath(), value));
 	}
 }

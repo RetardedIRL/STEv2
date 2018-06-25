@@ -21,11 +21,15 @@ public enum EncryptionType {
 	
 	public int getBlockSize() {
 		
-		if(this == DES)
+		if(this == DES || this == PBEWithMD5AndDES)
 			return 8;
-		else if(this == AES)
+		if(this == AES)
 			return 16;
-		else
-			return 0;
+		if(this == PBEWithSHAAnd128BitAES_CBC_BC)
+			return 128;
+		if(this == PBEWithSHAAnd40BitRC4)
+			return 40;
+		
+		return 0;
 	}
 }

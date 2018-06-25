@@ -1,1 +1,6 @@
 - Schmidt fragen, ob Stream Cipher IVs manuell so erstellt werden müssen
+- PBEKeySpec hello???
+
+- Change toByte() in FileManager?
+
+- Error message wenn keine Encryption stattfindet

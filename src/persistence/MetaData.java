@@ -3,6 +3,7 @@ package persistence;
 import Enums.Operation;
 import Enums.EncryptionType;
 
+import java.io.UnsupportedEncodingException;
 import java.security.KeyPair;
 
 import Enums.EncryptionMode;
@@ -19,18 +20,28 @@ public class MetaData {
 	PaddingType		padding;
 	KeyLength		keyLength;
 	HashFunction	hashFunction;
-	String			hashValue;
-	byte[]			IV;
+	String			hashValue = "";
+	byte[]			IV = new byte[] {};
 	
 	//Symmetric | Private key
-	byte[]			key;
+	byte[]			key = new byte[] {};
 
 	
 	//PBE
-	String			password;
+	String			password = "";
+	byte[]			salt = new byte[] {};
 	
-	byte[]			text;
+	byte[]			text = new byte[] {};
 
+	public MetaData() {}
+	
+	public void setSalt(byte[] salt) {
+		this.salt = salt;
+	}
+	
+	public byte[] getSalt() {
+		return salt;
+	}
 	
 	public void setText(byte[] text) {
 		this.text = text;
@@ -60,16 +71,6 @@ public class MetaData {
 	}
 	public void setPassword(String password) {
 		this.password = password;
-	}
-	
-	public MetaData() {}
-	public MetaData(EncryptionType encryption, EncryptionMode mode, PaddingType padding, HashFunction hashFunction, String hashValue) {
-		
-		this.encryption = encryption;
-		this.mode = mode;
-		this.padding = padding;
-		this.hashFunction = hashFunction;
-		this.hashValue = hashValue;
 	}
 	
 	public void setHashValue(String value) {
@@ -129,12 +130,24 @@ public class MetaData {
 	}
 	
 	public String toString() {
-		return 	"Encryption Method:\t" + this.encryption + "\n" +
-				"Encryption Mode:\t" + this.mode + "\n" +
-				"Padding:\t" + this.padding + "\n" +
-				"Key Length:\t" + this.keyLength + "\n" +
-				"Hash Function:\t" + this.hashFunction + "\n" +
-				"Hash Value:\t" + this.hashValue + "\n" +
-				"Instanzvektor:\t" + this.IV;
+		try {
+			return 	"Operation Method: " + this.operation + "\n" +
+					"Encryption Method: " + this.encryption + "\n" +
+					"Encryption Mode: " + this.mode + "\n" +
+					"Padding: " + this.padding + "\n" +
+					"Key Length: " + this.keyLength + "\n" +
+					"Hash Function: " + this.hashFunction + "\n" +
+					"Hash Value: " + this.hashValue + "\n" +
+					"Instanzvektor: " + new String(this.IV, "UTF-8") + "\n" +
+					"Generated key: " + new String(this.key, "UTF-8") + "\n" +
+					"Input password: " + this.password + "\n" +
+					"-----------------------" + "\n" +
+					"Text:\n" + new String(this.text, "UTF-8");
+		} catch (UnsupportedEncodingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		return null;
 	}
 }
