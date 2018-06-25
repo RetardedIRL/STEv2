@@ -22,7 +22,6 @@ import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.TextArea;
-import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
@@ -279,9 +278,6 @@ public class App extends Application {
 	            		modeBox.setDisable(true);
 	            		paddingBox.setDisable(true);
 	            		keyLengthBox.setDisable(true);
-	            		break;
-	            		
-	            	default:
 	            		break;
 	            	}
 

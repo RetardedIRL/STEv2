@@ -32,4 +32,11 @@ public enum EncryptionType {
 		
 		return 0;
 	}
+	
+	// >:I
+	public String toString() {
+		if(this == PBEWithSHAAnd128BitAES_CBC_BC)
+			return "PBEWithSHAAnd128BitAES-CBC-BC";
+		else return this.name();
+	}
 }

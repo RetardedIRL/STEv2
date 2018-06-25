@@ -4,7 +4,6 @@ import Enums.Operation;
 import Enums.EncryptionType;
 
 import java.io.UnsupportedEncodingException;
-import java.security.KeyPair;
 
 import Enums.EncryptionMode;
 import Enums.PaddingType;

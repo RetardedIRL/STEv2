@@ -19,7 +19,7 @@ import static org.junit.Assert.assertEquals;
 public class CryptoTest {
 
 	@Test
-	public void testAllEncryptionCombos() {
+	public void testAllSymmetricAsymmetricEncryptionCombos() {
 		
 		String input = "test";
 		
@@ -49,6 +49,30 @@ public class CryptoTest {
 								System.out.println("----------------------------------------\n");
 								assertEquals(input, cleartext);
 							}
+	}
+	
+	@Test
+	public void testPBE() {
+		
+		String input = "test";
+		String password = "password";
+		
+		MetaData testMeta = new MetaData();
+		testMeta.setOperation(Operation.Password);
+		testMeta.setHashFunction(HashFunction.NONE);
+		testMeta.setPassword(password);
+		
+		for(EncryptionType encryption : EncryptionType.getValuesByOperation(Operation.Password)) {
+		
+			testMeta.setEncryptionType(encryption);
+			
+			String cleartext = encryptionDecryption(testMeta, input);
+			
+			System.out.println(encryption);
+			System.out.println("----------------------------------------\n");
+			
+			assertEquals(input, cleartext);
+		}
 	}
 	
 	public String encryptionDecryption(MetaData meta, String input) {
