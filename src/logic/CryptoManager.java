@@ -28,6 +28,13 @@ import Enums.Operation;
 import Enums.PaddingType;
 import persistence.MetaData;
 
+/**
+ * Class called by FileManager to encrypt/decrypt data, using Bouncy Castle as its provider.
+ * 
+ * Ensures safety by generating strongly randomized keys and IVs, as well as a integrity
+ * check via hash validation.
+ * @author sam
+ */
 public class CryptoManager {
     
 	/** template array used to create stream cipher IVs */
