@@ -32,10 +32,17 @@ import javafx.scene.layout.RowConstraints;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 
-
+/**
+ * Main class of the STE application, builds GUIs and runs the program.
+ * 
+ * @author sam
+ */
 public class App extends Application {
-
+	
+	// we save the encryption stage so it only has to be built once
 	private Stage encryptionStage;
+	
+	// we also save the model used in this STE
 	private Model model;
 	
 	public static void main(String[] args) {
@@ -43,7 +50,7 @@ public class App extends Application {
 	}
 
 	/**
-	 * Create GUI and start it
+	 * Create the STE GUI and show the stage, by that starting the program.
 	 */
 	@Override
 	public void start(Stage stage) throws Exception {
@@ -143,6 +150,7 @@ public class App extends Application {
 			
 			gridPane.getRowConstraints().add(new RowConstraints(50));
 			
+			//Texts
 			Text operationText = new Text("Operation");
 			Text encryptionText = new Text("Encryption Method");
 			Text keyLengthText = new Text("Key Length");
@@ -150,6 +158,7 @@ public class App extends Application {
 			Text paddingText = new Text("Padding");
 			Text hashFText = new Text("Hash Function");
 			
+			//Alignments
 			GridPane.setHalignment(operationText, 	HPos.CENTER);
 			GridPane.setHalignment(encryptionText, 	HPos.CENTER);
 			GridPane.setHalignment(keyLengthText, 	HPos.CENTER);
@@ -164,15 +173,18 @@ public class App extends Application {
 			gridPane.add(paddingText, 	4, 0);
 			gridPane.add(hashFText, 	5, 0);
 			
+			// ------------------------ Comboboxes ------------------------
 			ComboBox<PaddingType> paddingBox = new ComboBox<PaddingType>();
 			paddingBox.setOnAction(new EventHandler<ActionEvent>() {
 	            public void handle(ActionEvent t) {
 	            	
-	            	//TODO change other dropdown options depending on the encryption
+	            	/* on action this fills the option currently
+	            	 * chosen into the metadata object used. */
 	            	model.getCurrentMeta().setPaddingType(paddingBox.getValue());
 	            }
 			});
 			
+			// set a dummy value to dodge annoying NullPointerException
 			paddingBox.setValue(PaddingType.NoPadding);
 			model.getCurrentMeta().setPaddingType(PaddingType.NoPadding);
 			
@@ -180,12 +192,17 @@ public class App extends Application {
 			modeBox.setOnAction(new EventHandler<ActionEvent>() {
 	            public void handle(ActionEvent t) {
 	            	
+	            	/* adjust the compatible padding types based on what
+	            	 * encryption method selected by the user. */
 	            	paddingBox.getItems().setAll(PaddingType.getPaddingByMode(modeBox.getValue()));
+	            	
+	            	// if padding box has no options, disable it
 	            	paddingBox.setDisable(paddingBox.getItems().toString() == "[]");
 	            	model.getCurrentMeta().setEncryptionMode(modeBox.getValue());
 	            }
 			});
 			
+			// dummy value
 			modeBox.setValue(EncryptionMode.ECB);
 			model.getCurrentMeta().setEncryptionMode(EncryptionMode.ECB);
 			
@@ -198,6 +215,7 @@ public class App extends Application {
 	            }
 			});
 			
+			// dummy value
 			keyLengthBox.setValue(KeyLength.x64);
 			model.getCurrentMeta().setKeyLength(KeyLength.x64);
 			
@@ -205,6 +223,7 @@ public class App extends Application {
 			encryptionBox.setOnAction(new EventHandler<ActionEvent>() {
 	            public void handle(ActionEvent t) {
 	            	
+	            	// set keylengths based on encryption method
 	            	keyLengthBox.getItems().setAll(KeyLength.getKeyLength(encryptionBox.getValue()));
 	            	keyLengthBox.setDisable(keyLengthBox.getItems().toString() == "[]");
 	            	
@@ -213,6 +232,7 @@ public class App extends Application {
 	            }
 			});
 			
+			// dummy value
 			encryptionBox.setValue(EncryptionType.DES);
 			model.getCurrentMeta().setEncryptionType(EncryptionType.DES);
 			
@@ -224,14 +244,18 @@ public class App extends Application {
 	            }
 			});
 			
+			// dummy value
 			hashFBox.setValue(HashFunction.NONE);
 			model.getCurrentMeta().setHashFunction(HashFunction.NONE);
-			hashFBox.getItems().addAll(HashFunction.values());
+			hashFBox.getItems().setAll(HashFunction.values());
 			
 			ComboBox<Operation> operationBox = new ComboBox<Operation>();
 			operationBox.setOnAction(new EventHandler<ActionEvent>() {
 	            public void handle(ActionEvent t) {
 	            	
+	            	/* With the operation box we enforce most of the input validity,
+	            	 * simply by changing all options to only show compatible ones,
+	            	 * using the compatibility methods provided in the Enums. */
 	            	Operation operation = operationBox.getValue();
 	            	
 	            	switch(operation) {
@@ -285,11 +309,12 @@ public class App extends Application {
 	            }
 			});
 			
+			// dummy value
 			operationBox.setValue(Operation.Symmetric);
 			model.getCurrentMeta().setOperation(Operation.Symmetric);
 			operationBox.getItems().addAll(Operation.values());
 			
-			
+			// alignments
 			GridPane.setHalignment(operationBox, HPos.CENTER);
 			GridPane.setHalignment(encryptionBox, HPos.CENTER);
 			GridPane.setHalignment(keyLengthBox, HPos.CENTER);
@@ -297,6 +322,7 @@ public class App extends Application {
 			GridPane.setHalignment(paddingBox, HPos.CENTER);
 			GridPane.setHalignment(hashFBox, HPos.CENTER);
 			
+			// more constraints
 			operationBox.setMinWidth(150);
 			encryptionBox.setMinWidth(150);
 			keyLengthBox.setMinWidth(150);

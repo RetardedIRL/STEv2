@@ -9,6 +9,11 @@ import javafx.scene.control.PasswordField;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 
+/**
+ * Class used to create an advanced password dialog window for JavaFX
+ * 
+ * https://gist.github.com/drguildo/ba2834bf52d624113041
+ */
 public class PasswordDialog extends Dialog<String> {
   private PasswordField passwordField;
 

@@ -10,7 +10,14 @@ import Enums.PaddingType;
 import Enums.KeyLength;
 import Enums.HashFunction;
 
-
+/**
+ * Class to provide a transfer object to the STE.
+ * 
+ * Used to save all the information necessary to encrypt, persist data and be able to
+ * read and use for decryption again.
+ * 
+ * @author sam
+ */
 public class MetaData {
 
 	Operation		operation;
@@ -22,16 +29,17 @@ public class MetaData {
 	String			hashValue = "";
 	byte[]			IV = new byte[] {};
 	
-	//Symmetric | Private key
+	// Symmetric | Private key | Password generated key
 	byte[]			key = new byte[] {};
 
 	
-	//PBE
+	// PBE
 	String			password = "";
 	byte[]			salt = new byte[] {};
 	
 	byte[]			text = new byte[] {};
 
+	/** Empty constructor */
 	public MetaData() {}
 	
 	public void setSalt(byte[] salt) {
@@ -126,27 +134,5 @@ public class MetaData {
 	
 	public KeyLength getKeyLength() {
 		return this.keyLength;
-	}
-	
-	public String toString() {
-		try {
-			return 	"Operation Method: " + this.operation + "\n" +
-					"Encryption Method: " + this.encryption + "\n" +
-					"Encryption Mode: " + this.mode + "\n" +
-					"Padding: " + this.padding + "\n" +
-					"Key Length: " + this.keyLength + "\n" +
-					"Hash Function: " + this.hashFunction + "\n" +
-					"Hash Value: " + this.hashValue + "\n" +
-					"Instanzvektor: " + new String(this.IV, "UTF-8") + "\n" +
-					"Generated key: " + new String(this.key, "UTF-8") + "\n" +
-					"Input password: " + this.password + "\n" +
-					"-----------------------" + "\n" +
-					"Text:\n" + new String(this.text, "UTF-8");
-		} catch (UnsupportedEncodingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		return null;
 	}
 }
