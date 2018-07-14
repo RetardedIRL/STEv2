@@ -63,7 +63,6 @@ public class FileManager {
 			Files.setAttribute(file.toPath(), "user:Operation", meta.getOperation().toString().getBytes());
 			Files.setAttribute(file.toPath(), "user:Encryption", meta.getEncryptionType().toString().getBytes());
 			Files.setAttribute(file.toPath(), "user:HashFunction", meta.getHashFunction().toString().getBytes());
-			Files.setAttribute(file.toPath(), "user:Hash", meta.getHashValue().toString().getBytes());
 			
 			// From there on we iterate over the operation method used.
 			switch(meta.getOperation()) {
@@ -171,7 +170,6 @@ public class FileManager {
 			tempMeta.setOperation(Operation.valueOf(asString(file, "user:Operation")));
 			tempMeta.setEncryptionType(EncryptionType.valueOf(asString(file, "user:Encryption")));
 			tempMeta.setHashFunction(HashFunction.valueOf(asString(file, "user:HashFunction")));
-			tempMeta.setHashValue(new String((byte[])Files.getAttribute(file.toPath(), "user:Hash")));
 			
 			// iterate over the operation specific metadata
 			switch(tempMeta.getOperation()) {

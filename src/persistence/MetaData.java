@@ -26,7 +26,6 @@ public class MetaData {
 	PaddingType		padding;
 	KeyLength		keyLength;
 	HashFunction	hashFunction;
-	String			hashValue = "";
 	byte[]			IV = new byte[] {};
 	
 	// Symmetric | Private key | Password generated key
@@ -87,14 +86,6 @@ public class MetaData {
 	
 	public void setPassword(String password) {
 		this.password = password;
-	}
-	
-	public void setHashValue(String value) {
-		this.hashValue = value;
-	}
-	
-	public String getHashValue() {
-		return this.hashValue;
 	}
 	
 	public void setHashFunction(HashFunction function) {

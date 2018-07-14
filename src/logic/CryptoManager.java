@@ -62,12 +62,7 @@ public class CryptoManager {
     	meta.setText(inputBytes);
     	
     	// if the entered encryption type is none, NONE (heh) of this has to happen, which makes it return fast.
-		if(meta.getEncryptionType() == EncryptionType.none)
-			
-				// all that needs to be done is generate the hash value
-				meta.setHashValue(generateHash(meta.getHashFunction(), inputBytes));
-		
-		else {
+		if(meta.getEncryptionType() != EncryptionType.none)	{
 			
 			/* eventhough a certain level of validity is enforced by the editor's GUI, some special rules
 			 * like the incompatibility of DES and GCM are specified and caught here.
@@ -76,7 +71,6 @@ public class CryptoManager {
 			 * Afterwards the method ends. */
 			if(!isValid(meta)) {
 				
-				meta.setHashValue(generateHash(meta.getHashFunction(), inputBytes));
 				meta.setKey(new byte[] {});
 			}
 			
@@ -171,14 +165,17 @@ public class CryptoManager {
 					break;
 				}
 				
-				// once the individualized ciphers are initialized, we apply it to the clear text and return the encrypted ciphertext
-				byte[] ciphertext = applyCipher(cipher, inputBytes);
+				/* Finally we implement our hash validation. The way we use this is by adding the hash value to
+				 * the plaintext before enciphering it. */
+				byte[] ciphertext;
 				
-				/* with that the encryption process is done, all that's left is to generate the hash value
-				 * used for validation when decrypting the file and hand that and the ciphertext over to
-				 * the metadata object. */
+				if(meta.getHashFunction() != HashFunction.NONE)
+					ciphertext = hashAndApplyCipher(meta.getHashFunction(), cipher, inputBytes);
+				else
+					ciphertext = applyCipher(cipher, inputBytes);
+				
+				// finally we hand over the enciphered text to the metadata object
 				meta.setText(ciphertext);
-				meta.setHashValue(generateHash(meta.getHashFunction(), ciphertext));
 			}
 		}
 	}
@@ -201,75 +198,95 @@ public class CryptoManager {
     		// firstly, we grab the key, as well as the cipher text from the MetaData object
 	    	byte[] key = meta.getKey();
 	    	byte[] inputBytes = meta.getText();
-			
-	    	/* next up comes our hash validation, which operates by hashing our inputBytes and
-	    	 * comparing that to the value read from the file's metadata handed in by the metadata object. */
-    		if(isHashValid(meta.getHashFunction(), inputBytes, meta.getHashValue()))
+
+			// First we check for validity in case something went wrong when reading the file
+			if(isValid(meta)) {
 				
-    			/* once we're clear the file hasn't been altered,
-    			 * we move on to test for validity again. */
-    			if(isValid(meta)) {
+				
+				// the following steps are fairly similar to the encryption process
+				Cipher cipher = null;
+				
+				// we iterate over the operation used in the file read
+				switch(meta.getOperation()) {
+				
+				// in case of symmetric encryption
+				case Symmetric:
+					IvParameterSpec iv = null;
 					
-    				
-    				// the following steps are fairly similar to the encryption process
-					Cipher cipher = null;
+					// read the IV if required
+					if(!meta.getEncryptionMode().getType().equals("block"))
+						iv = new IvParameterSpec(meta.getIV());
 					
-					// we iterate over the operation used in the file read
-					switch(meta.getOperation()) {
+					// initialize the cipher to be used for decryption later on
+					cipher = initializeCipher(Cipher.DECRYPT_MODE, meta, new SecretKeySpec(key, "BC"), iv);
+					break;
 					
-					// in case of symmetric encryption
-					case Symmetric:
-						IvParameterSpec iv = null;
-						
-						// read the IV if required
-						if(!meta.getEncryptionMode().getType().equals("block"))
-							iv = new IvParameterSpec(meta.getIV());
-						
-						// initialize the cipher to be used for decryption later on
-						cipher = initializeCipher(Cipher.DECRYPT_MODE, meta, new SecretKeySpec(key, "BC"), iv);
-						break;
-						
-					// in case of asymmetric encryption
-					case Asymmetric:
-						
-						// instantiate a cipher object
-						cipher = Cipher.getInstance("RSA/None/NoPadding", "BC");
-						
-						// use the handed in key bytes to create a EncodedKeySpec object
-						PKCS8EncodedKeySpec privKeySpec = new PKCS8EncodedKeySpec(key);
-						
-						// generate the private key by using the KeyFactory.generatePrivate() function
-						PrivateKey privKey = KeyFactory.getInstance("RSA", "BC").generatePrivate(privKeySpec);
-						
-						// initialize the cipher
-						cipher.init(Cipher.DECRYPT_MODE, privKey);
-						break;
-						
-					// in case of PBE
-					case Password:
-						
-						// instantiate the SecretKeyFactory object
-						SecretKeyFactory sKeyFactory = SecretKeyFactory.getInstance(meta.getEncryptionType().toString(), "BC");
-						
-						//generate the SecretKey object from the password handed in
-						//SecretKey sKey = sKeyFactory.generateSecret(new PBEKeySpec(meta.getPassword().toCharArray(), meta.getSalt(), iterationCount));
-						SecretKey sKey = sKeyFactory.generateSecret(new PBEKeySpec(meta.getPassword().toCharArray()));
-						
-						// initialize the cipher, handing in read salt and static iteration count
-						//cipher = initializeCipher(Cipher.DECRYPT_MODE, meta, sKey);
-						cipher = initializeCipher(Cipher.DECRYPT_MODE, meta.getEncryptionType(), sKey, new PBEParameterSpec(meta.getSalt(), iterationCount));
-						break;
+				// in case of asymmetric encryption
+				case Asymmetric:
+					
+					// instantiate a cipher object
+					cipher = Cipher.getInstance("RSA/None/NoPadding", "BC");
+					
+					// use the handed in key bytes to create a EncodedKeySpec object
+					PKCS8EncodedKeySpec privKeySpec = new PKCS8EncodedKeySpec(key);
+					
+					// generate the private key by using the KeyFactory.generatePrivate() function
+					PrivateKey privKey = KeyFactory.getInstance("RSA", "BC").generatePrivate(privKeySpec);
+					
+					// initialize the cipher
+					cipher.init(Cipher.DECRYPT_MODE, privKey);
+					break;
+					
+				// in case of PBE
+				case Password:
+					
+					// instantiate the SecretKeyFactory object
+					SecretKeyFactory sKeyFactory = SecretKeyFactory.getInstance(meta.getEncryptionType().toString(), "BC");
+					
+					//generate the SecretKey object from the password handed in
+					//SecretKey sKey = sKeyFactory.generateSecret(new PBEKeySpec(meta.getPassword().toCharArray(), meta.getSalt(), iterationCount));
+					SecretKey sKey = sKeyFactory.generateSecret(new PBEKeySpec(meta.getPassword().toCharArray()));
+					
+					// initialize the cipher, handing in read salt and static iteration count
+					//cipher = initializeCipher(Cipher.DECRYPT_MODE, meta, sKey);
+					cipher = initializeCipher(Cipher.DECRYPT_MODE, meta.getEncryptionType(), sKey, new PBEParameterSpec(meta.getSalt(), iterationCount));
+					break;
+				}
+				
+				
+				/* We apply the cipher to decrypt the byte array into the plaintext object. */
+				byte[] plaintext = cutLeftovers(applyCipher(cipher, inputBytes));
+				
+				// Now we implement our hash validation:
+				if(meta.getHashFunction() != HashFunction.NONE) {
+				
+					MessageDigest hash = MessageDigest.getInstance(meta.getHashFunction().toString(), "BC");
+					
+					/* We calculate how much of the deciphered plaintext is the actual message
+					 * and cut cut away the hash value.
+					 * 
+					 * After that we use our validation function to check if the read hash is the same
+					 * as the generated hash, if so we hand out the plaintext,
+					 * if not we throw an exception to indicate tampering. */
+					int messageLength = plaintext.length - hash.getDigestLength();
+					
+					byte[] hashCut = new byte[messageLength];
+					System.arraycopy(plaintext, 0, hashCut, 0, messageLength);
+					
+					
+					if(isHashValid(meta.getHashFunction(), plaintext, hash))
+						meta.setText(cutLeftovers(hashCut));
+					else {
+						meta.setText(new byte[] {});
+						System.out.println("ey fuck you");
+
+						//TODO: throw exception
 					}
-					
-					/** After we apply the cipher and decrypt the ciphertext, we apply a method to cut padding beauty marks,
-					 *  which weirdly enough only ever get caused by DES and PKCS7Padding.
-					 *  
-					 *  All it does is use the String.trim() function to cut off any unnecessary white spaces at the start
-					 *  (and in our case more importantly) end of the plain text.
-					 */
-					meta.setText(cutLeftovers(applyCipher(cipher, meta.getText())));
-		    	}
-			} 	
+				}
+				else
+					meta.setText(plaintext);
+	    	}
+    	}
     }
     
     /**
@@ -375,14 +392,35 @@ public class CryptoManager {
     }
     
     /**
-     * Method to apply a cipher to an input array to generate a ciphertext / cleartext.
+     * Method to generate and concenate a hash value to the plaintext before
+     * applying the cipher to encrypt it.
      * 
      * @param cipher the intialized cipher object.
      * @param input the responding input array.
+	 *
      * @return the transformed byte array, namely ciphertext or cleartext.
      * 
      * @throws Exception
      */
+    private static byte[] hashAndApplyCipher(HashFunction hashFunction, Cipher cipher, byte[] input) throws Exception
+	{
+    	MessageDigest hash = MessageDigest.getInstance(hashFunction.toString(), "BC");
+		
+    	// initialize an output array the size responding to the length of our input
+		byte[] output = new byte[cipher.getOutputSize(input.length + hash.getDigestLength())];
+		
+		/* run the update cipher update function over the input 
+		 * and save it's specifics for offset in the following step. */
+		int ctLength = cipher.update(input, 0, input.length, output, 0);
+		
+		hash.update(input);
+		
+		// run doFinal to complete the transformation
+		ctLength += cipher.doFinal(hash.digest(), 0, hash.getDigestLength(), output, ctLength);
+		// return the transformed byte array
+		return output;
+	}
+    
     private static byte[] applyCipher(Cipher cipher, byte[] input) throws Exception
 	{
     	// initialize an output array the size responding to the length of our input
@@ -391,6 +429,7 @@ public class CryptoManager {
 		/* run the update cipher update function over the input 
 		 * and save it's specifics for offset in the following step. */
 		int ctLength = cipher.update(input, 0, input.length, output, 0);
+
 		
 		// run doFinal to complete the transformation
 		ctLength += cipher.doFinal(output, ctLength);
@@ -446,34 +485,6 @@ public class CryptoManager {
 	}
 	
 	/**
-	 * Method to generate a hash value from an input array via a specified hashing function.
-	 * 
-	 * @param hashFunction the hashing function to be used.
-	 * @param input the byte array we base our hashing on.
-	 * @return a generated hash value encoded to String by Base64 or "" if the hashing function is NONE.
-	 * 
-	 * @throws Exception
-	 */
-	public static String generateHash(HashFunction hashFunction, byte[] input) throws Exception
-	{
-		//Return fast if no hashing function specified
-		if(hashFunction == HashFunction.NONE) {
-			return "";
-		}
-		
-		// instantiate a MessageDigest object with the hashing function and Bouncy Castle as a provider.
-		MessageDigest hash = MessageDigest.getInstance(hashFunction.toString(), "BC");
-		
-		// run the update function over the input array
-		hash.update(input);
-		
-		// return a String encoded by Base64 to guarantee unaffectedness by different char sets etc.
-		return Base64.getEncoder().encodeToString(hash.digest());
-	}
-
-	//TODO: private static
-	
-	/**
 	 * Method to validate a read hash value by comparing it with the result of hashing the current input.
 	 * 
 	 * @param hashFunction the hashing function used.
@@ -483,31 +494,18 @@ public class CryptoManager {
 	 * 
 	 * @throws Exception
 	 */
-	public static boolean isHashValid(HashFunction hashFunction, byte[] input, String read) throws Exception
-	{
-		// return fast, if no hashing function was specified
-		if(hashFunction == HashFunction.NONE) {
-			
-			// if the hash value isn't "" anymore the file has been altered
-			if(!read.equals(""))
-				return false;
-			
-			// otherwise return true
-			return true;
-		}
-
-		Decoder decoder = Base64.getDecoder();
-		/* using the MessageDigest compare function we check whether the read hash value is exactly
-		 * the same as the result of hashing our input with the hash function specified, using Base64
-		 * to decode our previously encoded hashes.
-		 * 
-		 * If true the file is still in it's original state (or the hash value has been tampered with the same
-		 * way the file got tampered with),
-		 * 
-		 * if not tampering/corruption is the case.
-		 */
-		return MessageDigest.isEqual(decoder.decode(read) , decoder.decode(generateHash(hashFunction, input)));
-
+	public static boolean isHashValid(HashFunction hashFunction, byte[] input, MessageDigest hash) throws Exception
+	{	
+		
+		int messageLength = input.length - hash.getDigestLength();
+		
+		hash.update(input, 0, messageLength);
+		
+		byte[] messageHash = new byte[hash.getDigestLength()];
+		System.arraycopy(input, messageLength, messageHash, 0, messageHash.length);
+		byte[] readHash = hash.digest();
+		
+		return MessageDigest.isEqual(messageHash, readHash);
 	}
 
 	/**
