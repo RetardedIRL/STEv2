@@ -34,7 +34,7 @@ public class CryptoTest {
 						for(KeyLength keylength : KeyLength.getKeyLength(encryption))
 							
 							for(HashFunction hashFunction : HashFunction.values()) {
-								MetaData testMeta = new MetaData();
+								MetaData testMeta = MetaData.getInstance();
 								
 								testMeta.setOperation(operation);
 								testMeta.setEncryptionType(encryption);
@@ -57,7 +57,7 @@ public class CryptoTest {
 		String input = "test";
 		String password = "password";
 		
-		MetaData testMeta = new MetaData();
+		MetaData testMeta = MetaData.getInstance();
 		testMeta.setOperation(Operation.Password);
 		testMeta.setHashFunction(HashFunction.NONE);
 		testMeta.setPassword(password);

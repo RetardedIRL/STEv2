@@ -35,7 +35,7 @@ public class Model {
 	 */
 	public Model(TextArea textArea) {
 		
-		currentMeta = new MetaData();
+		currentMeta = MetaData.getInstance();
 		this.textArea = textArea;
 	}
 	
@@ -56,7 +56,7 @@ public class Model {
 		
 		this.fileName = null;
 		this.filePath = null;
-		this.currentMeta = new MetaData();
+		this.currentMeta = MetaData.getInstance();
 		this.textArea.setText("");
 	}
 	

@@ -23,7 +23,7 @@ public class FileTest {
 	public void testSaveOpen() {
 		
 		String testString = "test";
-		MetaData testMeta = new MetaData();
+		MetaData testMeta = MetaData.getInstance();
 		
 		testMeta.setOperation(Operation.Symmetric);
 		testMeta.setEncryptionType(EncryptionType.AES);

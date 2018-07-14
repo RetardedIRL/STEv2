@@ -165,7 +165,7 @@ public class FileManager {
 		try {
 			
 			// create a dummy metadata object
-			MetaData tempMeta = new MetaData();
+			MetaData tempMeta = MetaData.getInstance();
 			
 			// read the uniform metadata
 			tempMeta.setOperation(Operation.valueOf(asString(file, "user:Operation")));

@@ -40,7 +40,14 @@ public class MetaData {
 	byte[]			text = new byte[] {};
 
 	/** Empty constructor */
-	public MetaData() {}
+	private MetaData() {}
+	
+	/**
+	 * Singleton pattern to increase security?
+	 */
+	public static MetaData getInstance() {
+		return new MetaData();
+	}
 	
 	public void setSalt(byte[] salt) {
 		this.salt = salt;
@@ -69,6 +76,7 @@ public class MetaData {
 	public Operation getOperation() {
 		return operation;
 	}
+	
 	public void setOperation(Operation operation) {
 		this.operation = operation;
 	}
@@ -76,6 +84,7 @@ public class MetaData {
 	public String getPassword() {
 		return password;
 	}
+	
 	public void setPassword(String password) {
 		this.password = password;
 	}
