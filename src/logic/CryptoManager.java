@@ -37,9 +37,6 @@ import persistence.MetaData;
  */
 public class CryptoManager {
     
-	/** template array used to create stream cipher IVs */
-	public static byte[] cipherIVTemplate = {0x00, 0x00, 0x00, 0x01};
-	
 	/** iteration count used for PBE */
 	public static int iterationCount = 2048;
 	
@@ -108,7 +105,7 @@ public class CryptoManager {
 						
 						/* we use a method to generate an IvParameterSpec that is both strongly random
 						 * and adjusted to the specified encryption mode */
-						iv = generateIvParameterSpec(meta.getEncryptionType(), meta.getEncryptionMode());
+						iv = generateIvParameterSpec(meta.getEncryptionType());
 						
 						// we hand the IV over to the metadata object so it can be persisted later
 						meta.setIV(iv.getIV());
@@ -276,15 +273,14 @@ public class CryptoManager {
     }
     
     /**
-     * Method used to generate a random IvParameterSpec object. Operates in a way that block size and required length
-     * dictated by encryption mode is accounted for, as well as specified attributes such as the template for
-     * stream cipher IVs.
+     * Method used to generate a random IvParameterSpec object.
+     * 
+     * -- Version 14.07.: stream cipher IVs no longer generated manually since apparently that's automatic
      * 
      * @param encryption the encryption method used, required to receive the block size
-     * @param mode the encryption mode used, required to receive the required IV length
      * @return the generated IvParameterSpec object
      */
-    private static IvParameterSpec generateIvParameterSpec(EncryptionType encryption, EncryptionMode mode) {
+    private static IvParameterSpec generateIvParameterSpec(EncryptionType encryption) {
     	
     	//acquire the block size depicted by the encryption method
     	int length = encryption.getBlockSize();
@@ -294,48 +290,11 @@ public class CryptoManager {
     	// not sure if I actually need this but I added it to prevent any possible NullPointerExceptions
     	if(length > 0) {
     		
-    		//generate a SecureRandom object used for creating the random bytes
+    		byte[] bytes = new byte[length];
     		SecureRandom rnd = new SecureRandom();
+    		rnd.nextBytes(bytes);
     		
-    		//instantiate the byte array
-    		byte[] ivBytes = new byte[length];
-    		
-    		/* iterate over the type of the mode to decide what type of IV to generate.
-    		 * 
-    		 * (since "block" got filtered out we don't have to account for that) */
-    		switch(mode.getType()) {
-    		
-    		// in case of "ivBlock" mode, namely CBC and CTS
-    		case "ivBlock":
-    			
-    			// simply fill the whole array with random bytes
-	    		rnd.nextBytes(ivBytes);
-	    		break;
-	    		
-	    	// in case of "stream" mode, like CFB8 or GCM
-    		case "stream":
-    			
-    			/* the stream cipher IV consists of two parts, since
-    			 * the last 4 bytes are dictated to be 0x00, 0x00, 0x00, 0x01.
-    			 * 
-    			 * We create a byte array with a size 4 spots shorter than the complete
-    			 * ivBytes array to leave space for the latter part.
-    			 * 
-    			 * Then we fill those remaining spots with random bytes, usually you'd
-    			 * reserve at least some of them for a linearly increasing message number,
-    			 * for our case however random is good enough since the chance of us reusing
-    			 * the same IV is very slim. */
-    			byte[] cipherIVRandom = new byte[length-4];
-    			rnd.nextBytes(cipherIVRandom);
-    			
-    			// once generated we can glue the two parts together into the ivBytes array
-    			System.arraycopy(cipherIVRandom, 0, ivBytes, 0, cipherIVRandom.length);
-    			System.arraycopy(cipherIVTemplate, 0, ivBytes, length-4, cipherIVTemplate.length);
-    			break;
-    		}
-    		
-    		// finally we initialize the IvParameterSpec object
-    		ivSpec = new IvParameterSpec(ivBytes);
+    		ivSpec = new IvParameterSpec(bytes);
     	}
     	
     	// and return it.
