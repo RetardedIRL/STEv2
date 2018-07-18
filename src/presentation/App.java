@@ -29,11 +29,14 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.RowConstraints;
+import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 
 /**
  * Main class of the STE application, builds GUIs and runs the program.
+ * 
+ * Enforces validity in the encryption GUI!
  * 
  * @author sam
  */
@@ -94,7 +97,7 @@ public class App extends Application {
 		MenuItem menuItemExit = new MenuItem("Exit");
 		menuItemExit.setOnAction(new EventHandler<ActionEvent>() {
             public void handle(ActionEvent t) {
-            	//Model exit
+            	//model.exit();
             }
         });
 		
@@ -139,6 +142,9 @@ public class App extends Application {
 			encryptionStage = new Stage();
 			encryptionStage.setTitle("Encryption");
 		
+			VBox vBox = new VBox();
+			vBox.setPadding(new Insets(10.0));
+			
 			GridPane gridPane = new GridPane();
 			
 			//Constraints
@@ -157,6 +163,7 @@ public class App extends Application {
 			Text modeText = new Text("Encryption Mode");
 			Text paddingText = new Text("Padding");
 			Text hashFText = new Text("Hash Function");
+			Text warningText = new Text(model.checkValidity());
 			
 			//Alignments
 			GridPane.setHalignment(operationText, 	HPos.CENTER);
@@ -173,6 +180,21 @@ public class App extends Application {
 			gridPane.add(paddingText, 	4, 0);
 			gridPane.add(hashFText, 	5, 0);
 			
+			Button doneButton = new Button("Done");
+			doneButton.setOnAction(new EventHandler<ActionEvent>() {
+	            public void handle(ActionEvent t) {
+	            	encryptionStage.close();
+
+	            }
+			});
+			
+			GridPane.setHalignment(doneButton, HPos.RIGHT);
+			GridPane.setValignment(doneButton, VPos.BOTTOM);
+			
+			GridPane.setMargin(doneButton, new Insets(10, 10, 10, 10));
+			
+			gridPane.add(doneButton, 5, 2);
+			
 			// ------------------------ Comboboxes ------------------------
 			ComboBox<PaddingType> paddingBox = new ComboBox<PaddingType>();
 			paddingBox.setOnAction(new EventHandler<ActionEvent>() {
@@ -181,6 +203,11 @@ public class App extends Application {
 	            	/* on action this fills the option currently
 	            	 * chosen into the metadata object used. */
 	            	model.getCurrentMeta().setPaddingType(paddingBox.getValue());
+	            	
+	            	model.checkSpecs();
+	            	warningText.setText(model.checkValidity());
+	            	doneButton.setDisable(!model.valid);
+	            	
 	            }
 			});
 			
@@ -199,6 +226,11 @@ public class App extends Application {
 	            	// if padding box has no options, disable it
 	            	paddingBox.setDisable(paddingBox.getItems().toString() == "[]");
 	            	model.getCurrentMeta().setEncryptionMode(modeBox.getValue());
+	            	
+	            	model.checkSpecs();
+	            	warningText.setText(model.checkValidity());
+	            	doneButton.setDisable(!model.valid);
+	            	
 	            }
 			});
 			
@@ -212,6 +244,9 @@ public class App extends Application {
 	            	
 	            	//HANDLE DOES NOT TRIGGER WHEN COMBOBOX IS EMPTY
 	            	model.getCurrentMeta().setKeyLength(keyLengthBox.getValue());
+	            	
+	            	model.checkSpecs();
+	            	doneButton.setDisable(!model.valid);
 	            }
 			});
 			
@@ -229,6 +264,9 @@ public class App extends Application {
 	            	
 	            	model.getCurrentMeta().setEncryptionType(encryptionBox.getValue());
 	            	
+	            	model.checkSpecs();
+	            	warningText.setText(model.checkValidity());
+	            	doneButton.setDisable(!model.valid);
 	            }
 			});
 			
@@ -241,6 +279,9 @@ public class App extends Application {
 	            public void handle(ActionEvent t) {
 	            	
 	            	model.getCurrentMeta().setHashFunction(hashFBox.getValue());
+	            	
+	            	model.checkSpecs();
+	            	doneButton.setDisable(!model.valid);
 	            }
 			});
 			
@@ -306,6 +347,10 @@ public class App extends Application {
 	            	}
 
 	            	model.getCurrentMeta().setOperation(operationBox.getValue());
+	            	
+	            	model.checkSpecs();
+	            	warningText.setText(model.checkValidity());
+	            	doneButton.setDisable(!model.valid);
 	            }
 			});
 			
@@ -336,23 +381,12 @@ public class App extends Application {
 			gridPane.add(modeBox, 3, 1);
 			gridPane.add(paddingBox, 4, 1);
 			gridPane.add(hashFBox, 5, 1);
-			
-			Button doneButton = new Button("Done");
-			doneButton.setOnAction(new EventHandler<ActionEvent>() {
-	            public void handle(ActionEvent t) {
-	            	encryptionStage.close();
 
-	            }
-			});
 			
-			GridPane.setHalignment(doneButton, HPos.RIGHT);
-			GridPane.setValignment(doneButton, VPos.BOTTOM);
+			vBox.getChildren().add(gridPane);
+			vBox.getChildren().add(warningText);
 			
-			GridPane.setMargin(doneButton, new Insets(10, 10, 10, 10));
-			
-			gridPane.add(doneButton, 5, 2);
-			
-			encryptionStage.setScene(new Scene(gridPane, 1150, 125));
+			encryptionStage.setScene(new Scene(vBox, 1200, 150));
 			
 			encryptionStage.setResizable(false);
 			

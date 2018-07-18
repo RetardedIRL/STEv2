@@ -4,9 +4,15 @@ import presentation.PasswordDialog;
 import persistence.FileManager;
 
 import java.io.File;
+import java.lang.reflect.Array;
+import java.util.Arrays;
 import java.util.Optional;
 
+import Enums.EncryptionMode;
+import Enums.EncryptionType;
+import Enums.KeyLength;
 import Enums.Operation;
+import Enums.PaddingType;
 import javafx.scene.control.TextArea;
 import javafx.stage.FileChooser;
 import persistence.MetaData;
@@ -29,12 +35,16 @@ public class Model {
 	   before it gets handed over to the CryptoManager to provide information. */
 	private MetaData currentMeta;
 	
+	// Variable to store validity in
+	public boolean valid;
+	
 	/** Constructor
 	 * 
 	 * Create an empty metadata object and store the editor's text area.
 	 */
 	public Model(TextArea textArea) {
 		
+		this.valid = false;
 		currentMeta = MetaData.getInstance();
 		this.textArea = textArea;
 	}
@@ -189,4 +199,75 @@ public class Model {
 	public MetaData getCurrentMeta() {
 		return this.currentMeta;
 	}
+	
+	/**
+	 * Method to check for remaining validity issues that can't be enforced by the GUI alone.
+	 * 
+	 * @param meta
+	 * @return
+	 */
+	public String checkValidity() {
+		
+		// since when using PBE all the details are specified in the encryption method, none of this applies, return early
+		if(currentMeta.getOperation() != Operation.Password) {
+			
+			// get the encryption method used
+			EncryptionMode mode = currentMeta.getEncryptionMode();
+			
+			/* Certain modes - namely ECB, CBC and CTS - don't work with NoPadding if the input isn't the same size or multiples of the block size dictated
+			 * by the mode, which leads to failure. */
+			if((mode == EncryptionMode.ECB || mode == EncryptionMode.CBC || mode == EncryptionMode.CTS) && currentMeta.getPaddingType() == PaddingType.NoPadding) {
+				
+				// prevent NullpointerException
+				if(currentMeta.getText().length > 0) {
+					if (currentMeta.getText().length % currentMeta.getEncryptionType().getBlockSize() != 0) {
+						
+						this.valid = false;
+						return "Error: Input bytes not compatible with block size.";
+					}
+				}
+				else {
+					this.valid = false;
+					return "Error: Using NoPadding with block modes is prevented";
+				}
+			
+			}
+			
+			// Here is the rule I talked about towards the beginning, where DES and GCM are incompatible
+			if(currentMeta.getEncryptionMode() == EncryptionMode.GCM && currentMeta.getEncryptionType() == EncryptionType.DES) {
+				
+				this.valid = false;
+				return "Error: GCM and DES are incompatible";
+			}
+		}
+		
+		this.valid = true;
+		// if none of these cases apply, the input metadata is valid and encryption/decryption can proceed.
+		return "";
+	}
+	
+	/**
+	 * WARNING SUPER UGLY METHOD
+	 * 
+	 * Method to check if all specs handed in are valid, has to be implemented because the GUI is DUMB.
+	 * 
+	 * @return true, if everything is valid
+	 */
+	public void checkSpecs() {
+		
+		Operation operation = currentMeta.getOperation();
+		EncryptionType encryption = currentMeta.getEncryptionType();
+		EncryptionMode mode = currentMeta.getEncryptionMode();
+		PaddingType padding = currentMeta.getPaddingType();
+		KeyLength keylength = currentMeta.getKeyLength();
+		
+		if(!Arrays.asList(encryption.getValuesByOperation(operation)).contains(encryption) ||
+			!Arrays.asList(mode.getModeByOperation(operation)).contains(mode) ||
+			!Arrays.asList(padding.getPaddingByMode(mode)).contains(padding) ||
+			!Arrays.asList(keylength.getKeyLength(encryption)).contains(keylength))
+			this.valid = false;
+		else
+			this.valid = true;
+	}
+	
 }

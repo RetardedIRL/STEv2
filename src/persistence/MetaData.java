@@ -144,4 +144,25 @@ public class MetaData {
 	public KeyLength getKeyLength() {
 		return this.keyLength;
 	}
+	
+	public String toString() {
+		
+		String temp = "";
+		
+		if(this.operation != null)
+			temp += "Operation: " + this.operation + "\n";
+		if(this.encryption != null)
+			temp += "Encryption Method: " + this.encryption + "\n";
+		if(this.mode != null)
+			temp += "Encryption Mode: " + this.mode + "\n";
+		if(this.padding != null)
+			temp += "Padding: " + this.padding + "\n";
+		if(this.keyLength != null)
+			temp += "Key length: " + this.keyLength + "\n";
+		if(this.hashFunction != null)
+			temp += "Hash function: " + this.hashFunction;
+		
+		
+		return temp;
+	}
 }

@@ -69,117 +69,102 @@ public class CryptoManager {
 		
 		else {
 			
-			/* eventhough a certain level of validity is enforced by the editor's GUI, some special rules
-			 * like the incompatibility of DES and GCM are specified and caught here.
-			 * 
-			 * if the validity check returns as false, the hash is built based on the clear text and the key is set to be nothing.
-			 * Afterwards the method ends. */
-			if(!isValid(meta)) {
-				
-				meta.setHashValue(generateHash(meta.getHashFunction(), inputBytes));
-				meta.setKey(new byte[] {});
-			}
+			// First we set up the variables to use, which we will later instantiate depending on the encryption method.
+			Cipher cipher = null;
+			Key key = null;
+			IvParameterSpec iv = null;
 			
-			// if validity check returns as true, we're set to start the encryption process.
-			else {
+			// We iterate over the operation set by the editor's encryption GUI
+			switch(meta.getOperation()) {
+			
+			// in case of the symmetric encryption we operate as follows
+			case Symmetric:
 				
-				// First we set up the variables to use, which we will later instantiate depending on the encryption method.
-				Cipher cipher = null;
-				Key key = null;
-				IvParameterSpec iv = null;
+				/* generate a random key with the strength specified by the encryption GUI.
+				 * 
+				 * For this I wrote a method that ensures a strong randomness of the key by making use of the KeyGenerator class. */
+				key = generateKey(meta.getEncryptionType(), meta.getKeyLength().asInt());
 				
-				// We iterate over the operation set by the editor's encryption GUI
-				switch(meta.getOperation()) {
-				
-				// in case of the symmetric encryption we operate as follows
-				case Symmetric:
+				/* Based on the specifics handed in via the GUI, the requested encryption requires an IV. This applies to those
+				 * encryption modes I specify as "ivBlock" and "stream", so we filter out the remaining type "block". */
+				if(!meta.getEncryptionMode().getType().equals("block")) {
 					
-					/* generate a random key with the strength specified by the encryption GUI.
-					 * 
-					 * For this I wrote a method that ensures a strong randomness of the key by making use of the KeyGenerator class. */
-					key = generateKey(meta.getEncryptionType(), meta.getKeyLength().asInt());
+					/* we use a method to generate an IvParameterSpec that is both strongly random
+					 * and adjusted to the specified encryption mode */
+					iv = generateIvParameterSpec(meta.getEncryptionType());
 					
-					/* Based on the specifics handed in via the GUI, the requested encryption requires an IV. This applies to those
-					 * encryption modes I specify as "ivBlock" and "stream", so we filter out the remaining type "block". */
-					if(!meta.getEncryptionMode().getType().equals("block")) {
-						
-						/* we use a method to generate an IvParameterSpec that is both strongly random
-						 * and adjusted to the specified encryption mode */
-						iv = generateIvParameterSpec(meta.getEncryptionType());
-						
-						// we hand the IV over to the metadata object so it can be persisted later
-						meta.setIV(iv.getIV());
-					}
-					
-					// once we got all the details set, we initialize the cipher to be used to encrypt the data later on
-					cipher = initializeCipher(Cipher.ENCRYPT_MODE, meta, key, iv);
-					
-					// at last we hand over the key so it can get persisted in the safety file later
-					meta.setKey(key.getEncoded());
-					break;
-					
-				// in case of asymmetric encryption this process differs a little
-				case Asymmetric:
-					
-					/* We generate a SecureRandom object to ensure key strength, then we feed that object
-					 * into a function - along with the specified key length - to generate a key pair
-					 * consisting of a public and a private key. */
-					SecureRandom rnd = new SecureRandom();
-					KeyPair keyPair = generateKeyPair(meta.getKeyLength().asInt(), rnd);
-					
-					/*
-					 * once we created that we use the public key for encryption and
-					 * hand over the private key to use for decryption.
-					 * 
-					 * A specific of asymmetric encryption is that we don't need the public for decryption,
-					 * so we can simply discard it and move on. */
-					key = keyPair.getPublic();
-					meta.setKey(keyPair.getPrivate().getEncoded());
-					
-					// then we initialize the cipher
-					cipher = initializeCipher(Cipher.ENCRYPT_MODE, key, rnd);
-					break;
-					
-				// lastly we're gonna look at PBE - password based encryption:
-				case Password:
-					
-					/* for PBE we require salt - a byte array as long as the block size given
-					 * with the encryption method -, which we 'add in' to prevent offline dictionary attacks.
-					 * 
-					 * We generate this using a SecureRandom object. */
-					SecureRandom rndSalt = new SecureRandom();
-					byte[] salt = new byte[meta.getEncryptionType().getBlockSize()];
-					
-					rndSalt.nextBytes(salt);
-					
-					// as always we hand over the information needed for decryption to be persisted later
-					meta.setSalt(salt);
-					
-					/* Now we instantiate a SecretKeyFactory object with the specifics passed on by the metadata object
-					 * and generate a secret key based on the cleartext password entered by the user. */
-					SecretKeyFactory sKeyFactory = SecretKeyFactory.getInstance(meta.getEncryptionType().toString(), "BC");
-					//SecretKey sKey = sKeyFactory.generateSecret(new PBEKeySpec(meta.getPassword().toCharArray(), salt, iterationCount));
-					SecretKey sKey = sKeyFactory.generateSecret(new PBEKeySpec(meta.getPassword().toCharArray()));
-					
-					/* again we initialize the cipher with the specifics, throwing in a static iterationCount
-					 * dictating how often the mixing function specified should be applied to generate the key.
-					 * 
-					 * The value is public, it's use being to simply make every calculation take up more resources,
-					 * which makes a huge difference for dictionary attacks and the such. */
-					//cipher = initializeCipher(Cipher.ENCRYPT_MODE, meta, sKey);
-					cipher = initializeCipher(Cipher.ENCRYPT_MODE, meta.getEncryptionType(), sKey, new PBEParameterSpec(salt, iterationCount));
-					break;
+					// we hand the IV over to the metadata object so it can be persisted later
+					meta.setIV(iv.getIV());
 				}
 				
-				// once the individualized ciphers are initialized, we apply it to the clear text and return the encrypted ciphertext
-				byte[] ciphertext = applyCipher(cipher, inputBytes);
+				// once we got all the details set, we initialize the cipher to be used to encrypt the data later on
+				cipher = initializeCipher(Cipher.ENCRYPT_MODE, meta, key, iv);
 				
-				/* with that the encryption process is done, all that's left is to generate the hash value
-				 * used for validation when decrypting the file and hand that and the ciphertext over to
-				 * the metadata object. */
-				meta.setText(ciphertext);
-				meta.setHashValue(generateHash(meta.getHashFunction(), ciphertext));
+				// at last we hand over the key so it can get persisted in the safety file later
+				meta.setKey(key.getEncoded());
+				break;
+				
+			// in case of asymmetric encryption this process differs a little
+			case Asymmetric:
+				
+				/* We generate a SecureRandom object to ensure key strength, then we feed that object
+				 * into a function - along with the specified key length - to generate a key pair
+				 * consisting of a public and a private key. */
+				SecureRandom rnd = new SecureRandom();
+				KeyPair keyPair = generateKeyPair(meta.getKeyLength().asInt(), rnd);
+				
+				/*
+				 * once we created that we use the public key for encryption and
+				 * hand over the private key to use for decryption.
+				 * 
+				 * A specific of asymmetric encryption is that we don't need the public for decryption,
+				 * so we can simply discard it and move on. */
+				key = keyPair.getPublic();
+				meta.setKey(keyPair.getPrivate().getEncoded());
+				
+				// then we initialize the cipher
+				cipher = initializeCipher(Cipher.ENCRYPT_MODE, key, rnd);
+				break;
+				
+			// lastly we're gonna look at PBE - password based encryption:
+			case Password:
+				
+				/* for PBE we require salt - a byte array as long as the block size given
+				 * with the encryption method -, which we 'add in' to prevent offline dictionary attacks.
+				 * 
+				 * We generate this using a SecureRandom object. */
+				SecureRandom rndSalt = new SecureRandom();
+				byte[] salt = new byte[meta.getEncryptionType().getBlockSize()];
+				
+				rndSalt.nextBytes(salt);
+				
+				// as always we hand over the information needed for decryption to be persisted later
+				meta.setSalt(salt);
+				
+				/* Now we instantiate a SecretKeyFactory object with the specifics passed on by the metadata object
+				 * and generate a secret key based on the cleartext password entered by the user. */
+				SecretKeyFactory sKeyFactory = SecretKeyFactory.getInstance(meta.getEncryptionType().toString(), "BC");
+				//SecretKey sKey = sKeyFactory.generateSecret(new PBEKeySpec(meta.getPassword().toCharArray(), salt, iterationCount));
+				SecretKey sKey = sKeyFactory.generateSecret(new PBEKeySpec(meta.getPassword().toCharArray()));
+				
+				/* again we initialize the cipher with the specifics, throwing in a static iterationCount
+				 * dictating how often the mixing function specified should be applied to generate the key.
+				 * 
+				 * The value is public, it's use being to simply make every calculation take up more resources,
+				 * which makes a huge difference for dictionary attacks and the such. */
+				//cipher = initializeCipher(Cipher.ENCRYPT_MODE, meta, sKey);
+				cipher = initializeCipher(Cipher.ENCRYPT_MODE, meta.getEncryptionType(), sKey, new PBEParameterSpec(salt, iterationCount));
+				break;
 			}
+			
+			// once the individualized ciphers are initialized, we apply it to the clear text and return the encrypted ciphertext
+			byte[] ciphertext = applyCipher(cipher, inputBytes);
+			
+			/* with that the encryption process is done, all that's left is to generate the hash value
+			 * used for validation when decrypting the file and hand that and the ciphertext over to
+			 * the metadata object. */
+			meta.setText(ciphertext);
+			meta.setHashValue(generateHash(meta.getHashFunction(), ciphertext));
 		}
 	}
     
@@ -204,72 +189,67 @@ public class CryptoManager {
 			
 	    	/* next up comes our hash validation, which operates by hashing our inputBytes and
 	    	 * comparing that to the value read from the file's metadata handed in by the metadata object. */
-    		if(isHashValid(meta.getHashFunction(), inputBytes, meta.getHashValue()))
+    		if(isHashValid(meta.getHashFunction(), inputBytes, meta.getHashValue())) {
+
+				// the following steps are fairly similar to the encryption process
+				Cipher cipher = null;
 				
-    			/* once we're clear the file hasn't been altered,
-    			 * we move on to test for validity again. */
-    			if(isValid(meta)) {
+				// we iterate over the operation used in the file read
+				switch(meta.getOperation()) {
+				
+				// in case of symmetric encryption
+				case Symmetric:
+					IvParameterSpec iv = null;
 					
-    				
-    				// the following steps are fairly similar to the encryption process
-					Cipher cipher = null;
+					// read the IV if required
+					if(!meta.getEncryptionMode().getType().equals("block"))
+						iv = new IvParameterSpec(meta.getIV());
 					
-					// we iterate over the operation used in the file read
-					switch(meta.getOperation()) {
+					// initialize the cipher to be used for decryption later on
+					cipher = initializeCipher(Cipher.DECRYPT_MODE, meta, new SecretKeySpec(key, "BC"), iv);
+					break;
 					
-					// in case of symmetric encryption
-					case Symmetric:
-						IvParameterSpec iv = null;
-						
-						// read the IV if required
-						if(!meta.getEncryptionMode().getType().equals("block"))
-							iv = new IvParameterSpec(meta.getIV());
-						
-						// initialize the cipher to be used for decryption later on
-						cipher = initializeCipher(Cipher.DECRYPT_MODE, meta, new SecretKeySpec(key, "BC"), iv);
-						break;
-						
-					// in case of asymmetric encryption
-					case Asymmetric:
-						
-						// instantiate a cipher object
-						cipher = Cipher.getInstance("RSA/None/NoPadding", "BC");
-						
-						// use the handed in key bytes to create a EncodedKeySpec object
-						PKCS8EncodedKeySpec privKeySpec = new PKCS8EncodedKeySpec(key);
-						
-						// generate the private key by using the KeyFactory.generatePrivate() function
-						PrivateKey privKey = KeyFactory.getInstance("RSA", "BC").generatePrivate(privKeySpec);
-						
-						// initialize the cipher
-						cipher.init(Cipher.DECRYPT_MODE, privKey);
-						break;
-						
-					// in case of PBE
-					case Password:
-						
-						// instantiate the SecretKeyFactory object
-						SecretKeyFactory sKeyFactory = SecretKeyFactory.getInstance(meta.getEncryptionType().toString(), "BC");
-						
-						//generate the SecretKey object from the password handed in
-						//SecretKey sKey = sKeyFactory.generateSecret(new PBEKeySpec(meta.getPassword().toCharArray(), meta.getSalt(), iterationCount));
-						SecretKey sKey = sKeyFactory.generateSecret(new PBEKeySpec(meta.getPassword().toCharArray()));
-						
-						// initialize the cipher, handing in read salt and static iteration count
-						//cipher = initializeCipher(Cipher.DECRYPT_MODE, meta, sKey);
-						cipher = initializeCipher(Cipher.DECRYPT_MODE, meta.getEncryptionType(), sKey, new PBEParameterSpec(meta.getSalt(), iterationCount));
-						break;
-					}
+				// in case of asymmetric encryption
+				case Asymmetric:
 					
-					/** After we apply the cipher and decrypt the ciphertext, we apply a method to cut padding beauty marks,
-					 *  which weirdly enough only ever get caused by DES and PKCS7Padding.
-					 *  
-					 *  All it does is use the String.trim() function to cut off any unnecessary white spaces at the start
-					 *  (and in our case more importantly) end of the plain text.
-					 */
-					meta.setText(cutLeftovers(applyCipher(cipher, meta.getText())));
-		    	}
-			} 	
+					// instantiate a cipher object
+					cipher = Cipher.getInstance("RSA/None/NoPadding", "BC");
+					
+					// use the handed in key bytes to create a EncodedKeySpec object
+					PKCS8EncodedKeySpec privKeySpec = new PKCS8EncodedKeySpec(key);
+					
+					// generate the private key by using the KeyFactory.generatePrivate() function
+					PrivateKey privKey = KeyFactory.getInstance("RSA", "BC").generatePrivate(privKeySpec);
+					
+					// initialize the cipher
+					cipher.init(Cipher.DECRYPT_MODE, privKey);
+					break;
+					
+				// in case of PBE
+				case Password:
+					
+					// instantiate the SecretKeyFactory object
+					SecretKeyFactory sKeyFactory = SecretKeyFactory.getInstance(meta.getEncryptionType().toString(), "BC");
+					
+					//generate the SecretKey object from the password handed in
+					//SecretKey sKey = sKeyFactory.generateSecret(new PBEKeySpec(meta.getPassword().toCharArray(), meta.getSalt(), iterationCount));
+					SecretKey sKey = sKeyFactory.generateSecret(new PBEKeySpec(meta.getPassword().toCharArray()));
+					
+					// initialize the cipher, handing in read salt and static iteration count
+					//cipher = initializeCipher(Cipher.DECRYPT_MODE, meta, sKey);
+					cipher = initializeCipher(Cipher.DECRYPT_MODE, meta.getEncryptionType(), sKey, new PBEParameterSpec(meta.getSalt(), iterationCount));
+					break;
+				}
+				
+				/** After we apply the cipher and decrypt the ciphertext, we apply a method to cut padding beauty marks,
+				 *  which weirdly enough only ever get caused by DES and PKCS7Padding.
+				 *  
+				 *  All it does is use the String.trim() function to cut off any unnecessary white spaces at the start
+				 *  (and in our case more importantly) end of the plain text.
+				 */
+				meta.setText(cutLeftovers(applyCipher(cipher, meta.getText())));
+	    	}
+    	}
     }
     
     /**
@@ -510,39 +490,6 @@ public class CryptoManager {
 
 	}
 
-	/**
-	 * Method to check for remaining validity issues that can't be enforced by the GUI alone.
-	 * 
-	 * @param meta
-	 * @return
-	 */
-	private static boolean isValid(MetaData meta) {
-		
-		// since when using PBE all the details are specified in the encryption method, none of this applies, return early
-		if(meta.getOperation() != Operation.Password) {
-			
-			// get the encryption method used
-			EncryptionMode mode = meta.getEncryptionMode();
-			
-			/* Certain modes - namely ECB, CBC and CTS - don't work with NoPadding if the input isn't the same size or multiples of the block size dictated
-			 * by the mode, which leads to failure. */
-			if(mode == EncryptionMode.ECB || mode == EncryptionMode.CBC || mode == EncryptionMode.CTS)
-				if(meta.getPaddingType() == PaddingType.NoPadding && (meta.getText().length % meta.getEncryptionType().getBlockSize()) != 0) {
-					System.out.println("Input bytes not compatible with block size.");
-					return false;
-				}
-			
-			// Here is the rule I talked about towards the beginning, where DES and GCM are incompatible
-			if(meta.getEncryptionMode() == EncryptionMode.GCM && meta.getEncryptionType() == EncryptionType.DES) {
-				System.out.println("GCM and DES are incompatible");
-				return false;
-			}
-		}
-		
-		// if none of these cases apply, the input metadata is valid and encryption/decryption can proceed.
-		return true;
-	}
-	
 	/**
 	 * Method using String.trim() to cut decryption beauty marks caused by DES and PKCS7.
 	 * 
