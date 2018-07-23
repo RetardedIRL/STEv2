@@ -18,6 +18,7 @@ import javafx.geometry.VPos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
@@ -25,6 +26,7 @@ import javafx.scene.control.TextArea;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
@@ -44,6 +46,7 @@ public class App extends Application {
 	
 	// we save the encryption stage so it only has to be built once
 	private Stage encryptionStage;
+	private MenuItem menuItemSave;
 	
 	// we also save the model used in this STE
 	private Model model;
@@ -67,7 +70,8 @@ public class App extends Application {
 		MenuBar menuBar = new MenuBar();
 		
 		// ------------------------ File Menu ------------------------
-		Menu fileMenu = new Menu("File");
+		Menu fileMenu = new Menu("");
+
 		
 		MenuItem menuItemNew = new MenuItem("New");
 		menuItemNew.setOnAction(new EventHandler<ActionEvent>() {
@@ -82,7 +86,7 @@ public class App extends Application {
             	model.open();
             }
         });
-		MenuItem menuItemSave = new MenuItem("Save");
+		menuItemSave = new MenuItem("Save");
 		menuItemSave.setOnAction(new EventHandler<ActionEvent>() {
             public void handle(ActionEvent t) {
             	model.save();
@@ -100,6 +104,17 @@ public class App extends Application {
             	//model.exit();
             }
         });
+		
+		Label menuLabel = new Label("File");
+		
+		menuLabel.setOnMouseClicked(new EventHandler<MouseEvent>() {
+			public void handle(MouseEvent t) {
+				menuItemSave.setDisable(!model.valid);
+				menuItemSaveAs.setDisable(!model.valid);
+			}
+		});
+		
+		fileMenu.setGraphic(menuLabel);
 		
 		fileMenu.getItems().addAll(menuItemNew, menuItemOpen, menuItemSave, menuItemSaveAs, menuItemExit);
 		

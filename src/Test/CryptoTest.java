@@ -15,6 +15,7 @@ import logic.CryptoManager;
 
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 public class CryptoTest {
 
@@ -34,6 +35,7 @@ public class CryptoTest {
 						for(KeyLength keylength : KeyLength.getKeyLength(encryption))
 							
 							for(HashFunction hashFunction : HashFunction.values()) {
+								
 								MetaData testMeta = MetaData.getInstance();
 								
 								testMeta.setOperation(operation);
@@ -43,11 +45,14 @@ public class CryptoTest {
 								testMeta.setKeyLength(keylength);
 								testMeta.setHashFunction(hashFunction);
 								
-								String cleartext = encryptionDecryption(testMeta, input);
-								
-								System.out.println(encryption + ", " + mode + ", " + padding + ", " + keylength + ", " + hashFunction);
-								System.out.println("----------------------------------------\n");
-								assertEquals(input, cleartext);
+								// now that validity is enforced in GUI I have to include this manually which sucks but oh well what do.
+								if(checkValidity(testMeta)) {
+									String cleartext = encryptionDecryption(testMeta, input);
+									
+									System.out.println(encryption + ", " + mode + ", " + padding + ", " + keylength + ", " + hashFunction);
+									System.out.println("----------------------------------------\n");
+									assertEquals(input, cleartext);
+								}
 							}
 	}
 	
@@ -75,6 +80,44 @@ public class CryptoTest {
 		}
 	}
 	
+	/**
+	 * Test to check whether decryption is only done correctly when using the correct key.
+	 * 
+	 * Is cleared when decrypted string is unequal to input string.
+	 */
+	@Test
+	public void testWrongKey() {
+		
+		String input = "test";
+		
+		MetaData testMeta = MetaData.getInstance();
+		
+		testMeta.setOperation(Operation.Symmetric);
+		testMeta.setEncryptionType(EncryptionType.AES);
+		testMeta.setEncryptionMode(EncryptionMode.CFB8);
+		testMeta.setPaddingType(PaddingType.NoPadding);
+		testMeta.setKeyLength(KeyLength.x128);
+		testMeta.setHashFunction(HashFunction.NONE);
+		
+		try {
+			
+			CryptoManager.encrypt(input, testMeta);
+			
+			//Tamper with key
+			byte[] key = testMeta.getKey();
+			
+			key[2] = 0x09;
+			testMeta.setKey(key);
+			
+			CryptoManager.decrypt(testMeta);
+			
+			assertFalse(input.equals(new String(testMeta.getText(), "UTF-8")));
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
 	public String encryptionDecryption(MetaData meta, String input) {
 		
 		System.out.println("----------------------------------------");
@@ -95,4 +138,40 @@ public class CryptoTest {
 		
 		return null;
 	}
+	
+	public boolean checkValidity(MetaData currentMeta) {
+			
+			// since when using PBE all the details are specified in the encryption method, none of this applies, return early
+			if(currentMeta.getOperation() != Operation.Password) {
+				
+				// get the encryption method used
+				EncryptionMode mode = currentMeta.getEncryptionMode();
+				
+				/* Certain modes - namely ECB, CBC and CTS - don't work with NoPadding if the input isn't the same size or multiples of the block size dictated
+				 * by the mode, which leads to failure. */
+				if((mode == EncryptionMode.ECB || mode == EncryptionMode.CBC || mode == EncryptionMode.CTS) && currentMeta.getPaddingType() == PaddingType.NoPadding) {
+					
+					// prevent NullpointerException
+					if(currentMeta.getText().length > 0) {
+						if (currentMeta.getText().length % currentMeta.getEncryptionType().getBlockSize() != 0) {
+							
+							return false;
+						}
+					}
+					else {
+						return false;
+					}
+				
+				}
+				
+				// Here is the rule I talked about towards the beginning, where DES and GCM are incompatible
+				if(currentMeta.getEncryptionMode() == EncryptionMode.GCM && currentMeta.getEncryptionType() == EncryptionType.DES) {
+					
+					return false;
+				}
+			}
+			
+			// if none of these cases apply, the input metadata is valid and encryption/decryption can proceed.
+			return true;
+		}
 }

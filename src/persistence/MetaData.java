@@ -18,29 +18,29 @@ import Enums.HashFunction;
  * 
  * @author sam
  */
-public class MetaData {
+public final class MetaData {
 
-	Operation		operation;
-	EncryptionType 	encryption;
-	EncryptionMode 	mode;
-	PaddingType		padding;
-	KeyLength		keyLength;
-	HashFunction	hashFunction;
+	private Operation		operation;
+	private EncryptionType 	encryption;
+	private EncryptionMode 	mode;
+	private PaddingType		padding;
+	private KeyLength		keyLength;
+	private HashFunction	hashFunction;
 	String			hashValue = "";
-	byte[]			IV = new byte[] {};
+	private byte[]			IV = new byte[] {};
 	
 	// Symmetric | Private key | Password generated key
-	byte[]			key = new byte[] {};
+	private byte[]			key = new byte[] {};
 
 	
 	// PBE
 	String			password = "";
-	byte[]			salt = new byte[] {};
+	private byte[]			salt = new byte[] {};
 	
-	byte[]			text = new byte[] {};
+	private byte[]			text = new byte[] {};
 
 	/** Empty constructor */
-	private MetaData() {}
+	MetaData() {}
 	
 	/**
 	 * Singleton pattern to increase security?

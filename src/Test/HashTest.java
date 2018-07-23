@@ -38,8 +38,10 @@ public class HashTest {
 		try {
 			hash = CryptoManager.generateHash(HashFunction.SHA1, input);
 			
+			//System.out.println(new String(input, "UTF-8"));
 			input[4] = 0x09;
 			
+			//System.out.println(new String(input, "UTF-8"));
 			assertFalse(CryptoManager.isHashValid(HashFunction.SHA1, input, hash));
 		} catch(Exception e) {
 		}

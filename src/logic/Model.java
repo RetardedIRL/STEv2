@@ -261,10 +261,10 @@ public class Model {
 		PaddingType padding = currentMeta.getPaddingType();
 		KeyLength keylength = currentMeta.getKeyLength();
 		
-		if(!Arrays.asList(encryption.getValuesByOperation(operation)).contains(encryption) ||
-			!Arrays.asList(mode.getModeByOperation(operation)).contains(mode) ||
-			!Arrays.asList(padding.getPaddingByMode(mode)).contains(padding) ||
-			!Arrays.asList(keylength.getKeyLength(encryption)).contains(keylength))
+		if(!Arrays.asList(EncryptionType.getValuesByOperation(operation)).contains(encryption) ||
+			!Arrays.asList(EncryptionMode.getModeByOperation(operation)).contains(mode) ||
+			!Arrays.asList(PaddingType.getPaddingByMode(mode)).contains(padding) ||
+			!Arrays.asList(KeyLength.getKeyLength(encryption)).contains(keylength))
 			this.valid = false;
 		else
 			this.valid = true;
