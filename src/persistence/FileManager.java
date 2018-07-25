@@ -20,7 +20,7 @@ import persistence.MetaData;
 /**
  * Class called by the model to persist data handed in by the CryptoManager class.
  * 
- * @author sam
+ * @author Sam
  */
 public class FileManager {
 

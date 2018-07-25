@@ -1,6 +1,5 @@
 package logic;
 
-import java.io.UnsupportedEncodingException;
 import java.security.Key;
 import java.security.KeyFactory;
 import java.security.KeyPair;
@@ -19,11 +18,8 @@ import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.PBEParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
-import Enums.EncryptionMode;
 import Enums.EncryptionType;
 import Enums.HashFunction;
-import Enums.Operation;
-import Enums.PaddingType;
 import persistence.MetaData;
 
 /**
@@ -31,9 +27,10 @@ import persistence.MetaData;
  * 
  * Ensures safety by generating strongly randomized keys and IVs, as well as a integrity
  * check via hash validation.
- * @author sam
+ * 
+ * @author Sam
  */
-public class CryptoManager {
+public final class CryptoManager {
     
 	/** iteration count used for PBE */
 	public static int iterationCount = 2048;
@@ -483,8 +480,6 @@ public class CryptoManager {
 		 * if not tampering/corruption is the case.
 		 */
 		
-		byte[] generatedHash = Utils.toByteArray(generateHash(hashFunction, input));
-		byte[] readHash = Utils.toByteArray(read);
 		return MessageDigest.isEqual(Utils.toByteArray(read) , Utils.toByteArray(generateHash(hashFunction, input)));
 
 	}

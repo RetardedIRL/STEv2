@@ -4,7 +4,6 @@ import presentation.PasswordDialog;
 import persistence.FileManager;
 
 import java.io.File;
-import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Optional;
 
@@ -19,9 +18,10 @@ import persistence.MetaData;
 
 /**
  * Model class for the STE. Handles logic when given in commands from the GUI.
- * @author sam
+ * 
+ * @author Sam
  */
-public class Model {
+public final class Model {
 
 	// we save the editor's text area so we can manipulate it directly.
 	private TextArea textArea;
@@ -197,6 +197,10 @@ public class Model {
 			
 			currentMeta = MetaData.getInstance();
 		}
+	}
+	
+	public void exit() {
+		System.exit(0);
 	}
 	
 	/**

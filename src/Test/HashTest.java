@@ -9,6 +9,12 @@ import org.junit.Test;
 import Enums.HashFunction;
 import logic.CryptoManager;
 
+/**
+ * Method to cover hash validation.
+ * 
+ * @author Sam
+ *
+ */
 public class HashTest {
 
 	@Test

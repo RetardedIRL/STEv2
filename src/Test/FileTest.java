@@ -17,6 +17,12 @@ import Enums.PaddingType;
 import persistence.MetaData;
 import persistence.FileManager;;
 
+/**
+ * Test class to cover the functionalities provided by the FileManager class.
+ * 
+ * @author Sam
+ *
+ */
 public class FileTest {
 
 	@Test

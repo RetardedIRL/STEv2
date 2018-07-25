@@ -1,9 +1,9 @@
 package logic;
 
 /**
- * Utility class.
+ * Utility class to provide byte array and string conversion independent from charsets.
  * 
- * @author sam
+ * @author Sam
  *
  */
 public final class Utils {

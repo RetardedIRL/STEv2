@@ -43,9 +43,9 @@ import javafx.stage.Stage;
  * 
  * Enforces validity in the encryption GUI!
  * 
- * @author sam
+ * @author Sam
  */
-public class App extends Application {
+public final class App extends Application {
 	
 	// we save the encryption stage so it only has to be built once
 	private Stage encryptionStage;
@@ -105,7 +105,7 @@ public class App extends Application {
 		MenuItem menuItemExit = new MenuItem("Exit");
 		menuItemExit.setOnAction(new EventHandler<ActionEvent>() {
             public void handle(ActionEvent t) {
-            	//model.exit();
+            	model.exit();
             }
         });
 		
@@ -153,6 +153,9 @@ public class App extends Application {
 	/**
 	 * Manages encryption window GUI.
 	 * 
+	 * To explain the GUI further, almost all the dropboxes call a function that checks for validty, sadly because of the
+	 * nature of the GUI this is kind of wacky. The done button gets grayed out if the GUI wacks out and the current
+	 * encryption combo is invalid.
 	 * On first call it creates the stage, any calls later simply display the scene.
 	 * 
 	 */

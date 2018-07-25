@@ -17,6 +17,12 @@ import logic.Utils;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
+/**
+ * Test class to cover everything surrounding the CryptoManager class.
+ * 
+ * @author Sam
+ *
+ */
 public class CryptoTest {
 
 	@Test
