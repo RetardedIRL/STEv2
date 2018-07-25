@@ -30,32 +30,52 @@ public class CryptoTest {
 
 				for(EncryptionMode mode : EncryptionMode.getModeByOperation(operation))
 
-					for(PaddingType padding : PaddingType.getPaddingByMode(mode))
-
-						for(KeyLength keylength : KeyLength.getKeyLength(encryption))
-							
-							for(HashFunction hashFunction : HashFunction.values()) {
+					if(mode != EncryptionMode.CTS)
+						for(PaddingType padding : PaddingType.getPaddingByMode(mode))
+	
+							for(KeyLength keylength : KeyLength.getKeyLength(encryption))
 								
-								MetaData testMeta = MetaData.getInstance();
-								
-								testMeta.setOperation(operation);
-								testMeta.setEncryptionType(encryption);
-								testMeta.setEncryptionMode(mode);
-								testMeta.setPaddingType(padding);
-								testMeta.setKeyLength(keylength);
-								testMeta.setHashFunction(hashFunction);
-								
-								// now that validity is enforced in GUI I have to include this manually which sucks but oh well what do.
-								if(checkValidity(testMeta)) {
-									String cleartext = encryptionDecryption(testMeta, input);
+								for(HashFunction hashFunction : HashFunction.values()) {
 									
-									System.out.println(encryption + ", " + mode + ", " + padding + ", " + keylength + ", " + hashFunction);
-									System.out.println("----------------------------------------\n");
-									assertEquals(input, cleartext);
+									MetaData testMeta = MetaData.getInstance();
+									
+									testMeta.setOperation(operation);
+									testMeta.setEncryptionType(encryption);
+									testMeta.setEncryptionMode(mode);
+									testMeta.setPaddingType(padding);
+									testMeta.setKeyLength(keylength);
+									testMeta.setHashFunction(hashFunction);
+									
+									// now that validity is enforced in GUI I have to include this manually which sucks but oh well what do.
+									if(checkValidity(testMeta)) {
+										String cleartext = encryptionDecryption(testMeta, input);
+										
+										System.out.println(encryption + ", " + mode + ", " + padding + ", " + keylength + ", " + hashFunction);
+										System.out.println("----------------------------------------\n");
+										assertEquals(input, cleartext);
+									}
 								}
-							}
 	}
 	
+	@Test
+	public void testCTS() {
+		
+		String input = "testtesttesttesttesttesttesttesttesttesttesttest";
+		
+		MetaData testMeta = MetaData.getInstance();
+		
+		testMeta.setOperation(Operation.Symmetric);
+		testMeta.setEncryptionType(EncryptionType.AES);
+		testMeta.setEncryptionMode(EncryptionMode.CTS);
+		testMeta.setPaddingType(PaddingType.NoPadding);
+		testMeta.setKeyLength(KeyLength.x128);
+		testMeta.setHashFunction(HashFunction.NONE);
+		
+		String cleartext = encryptionDecryption(testMeta, input);
+		
+		assertEquals(input, cleartext);
+		
+	}
 	@Test
 	public void testPBE() {
 		
@@ -147,13 +167,18 @@ public class CryptoTest {
 				// get the encryption method used
 				EncryptionMode mode = currentMeta.getEncryptionMode();
 				
-				/* Certain modes - namely ECB, CBC and CTS - don't work with NoPadding if the input isn't the same size or multiples of the block size dictated
+				int blockSize = 0;
+				
+				if(currentMeta.getEncryptionType() != null)
+					blockSize = currentMeta.getEncryptionType().getBlockSize();
+				
+				/* Certain modes - namely ECB and CBC - don't work with NoPadding if the input isn't the same size or multiples of the block size dictated
 				 * by the mode, which leads to failure. */
-				if((mode == EncryptionMode.ECB || mode == EncryptionMode.CBC || mode == EncryptionMode.CTS) && currentMeta.getPaddingType() == PaddingType.NoPadding) {
+				if((mode == EncryptionMode.ECB || mode == EncryptionMode.CBC) && currentMeta.getPaddingType() == PaddingType.NoPadding) {
 					
 					// prevent NullpointerException
-					if(currentMeta.getText().length > 0) {
-						if (currentMeta.getText().length % currentMeta.getEncryptionType().getBlockSize() != 0) {
+					if(currentMeta.getText().length > 0 && blockSize != 0) {
+						if (currentMeta.getText().length % blockSize != 0) {
 							
 							return false;
 						}
@@ -164,8 +189,12 @@ public class CryptoTest {
 				
 				}
 				
+				if(mode == EncryptionMode.CTS && currentMeta.getText().length < blockSize) {
+					return false;
+				}
+				
 				// Here is the rule I talked about towards the beginning, where DES and GCM are incompatible
-				if(currentMeta.getEncryptionMode() == EncryptionMode.GCM && currentMeta.getEncryptionType() == EncryptionType.DES) {
+				if(mode == EncryptionMode.GCM && currentMeta.getEncryptionType() == EncryptionType.DES) {
 					
 					return false;
 				}

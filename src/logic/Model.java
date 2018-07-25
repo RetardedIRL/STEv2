@@ -214,13 +214,18 @@ public class Model {
 			// get the encryption method used
 			EncryptionMode mode = currentMeta.getEncryptionMode();
 			
-			/* Certain modes - namely ECB, CBC and CTS - don't work with NoPadding if the input isn't the same size or multiples of the block size dictated
+			int blockSize = 0;
+			
+			if(currentMeta.getEncryptionType() != null)
+				blockSize = currentMeta.getEncryptionType().getBlockSize();
+			
+			/* Certain modes - namely ECB and CBC - don't work with NoPadding if the input isn't the same size or multiples of the block size dictated
 			 * by the mode, which leads to failure. */
-			if((mode == EncryptionMode.ECB || mode == EncryptionMode.CBC || mode == EncryptionMode.CTS) && currentMeta.getPaddingType() == PaddingType.NoPadding) {
+			if((mode == EncryptionMode.ECB || mode == EncryptionMode.CBC) && currentMeta.getPaddingType() == PaddingType.NoPadding) {
 				
 				// prevent NullpointerException
-				if(currentMeta.getText().length > 0) {
-					if (currentMeta.getText().length % currentMeta.getEncryptionType().getBlockSize() != 0) {
+				if(currentMeta.getText().length > 0 && blockSize != 0) {
+					if (currentMeta.getText().length % blockSize != 0) {
 						
 						this.valid = false;
 						return "Error: Input bytes not compatible with block size.";
@@ -233,8 +238,13 @@ public class Model {
 			
 			}
 			
+			if(mode == EncryptionMode.CTS && currentMeta.getText().length < blockSize) {
+				
+					this.valid = false;
+					return "Error: CTS needs at least one block size of input";
+			}
 			// Here is the rule I talked about towards the beginning, where DES and GCM are incompatible
-			if(currentMeta.getEncryptionMode() == EncryptionMode.GCM && currentMeta.getEncryptionType() == EncryptionType.DES) {
+			if(mode == EncryptionMode.GCM && currentMeta.getEncryptionType() == EncryptionType.DES) {
 				
 				this.valid = false;
 				return "Error: GCM and DES are incompatible";

@@ -47,6 +47,7 @@ public class App extends Application {
 	// we save the encryption stage so it only has to be built once
 	private Stage encryptionStage;
 	private MenuItem menuItemSave;
+	private TextArea textArea;
 	
 	// we also save the model used in this STE
 	private Model model;
@@ -61,7 +62,7 @@ public class App extends Application {
 	@Override
 	public void start(Stage stage) throws Exception {
 		
-		TextArea textArea = new TextArea();
+		textArea = new TextArea();
 
 		model = new Model(textArea);
 		
@@ -406,6 +407,8 @@ public class App extends Application {
 			encryptionStage.setResizable(false);
 			
 		}
+		
+		model.getCurrentMeta().setText(textArea.getText().getBytes());
 		encryptionStage.show();
 	}
 }
