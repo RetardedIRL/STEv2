@@ -6,6 +6,9 @@ import Enums.EncryptionType;
 import Enums.HashFunction;
 import Enums.KeyLength;
 import Enums.Operation;
+
+import java.io.UnsupportedEncodingException;
+
 import Enums.EncryptionMode;
 import Enums.PaddingType;
 
@@ -151,6 +154,7 @@ public class App extends Application {
 	 * Manages encryption window GUI.
 	 * 
 	 * On first call it creates the stage, any calls later simply display the scene.
+	 * 
 	 */
 	public void openEncryptionWindow() {
 
@@ -408,7 +412,12 @@ public class App extends Application {
 			
 		}
 		
-		model.getCurrentMeta().setText(textArea.getText().getBytes());
+		try {
+			model.getCurrentMeta().setText(textArea.getText().getBytes("UTF-8"));
+		} catch (UnsupportedEncodingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		encryptionStage.show();
 	}
 }

@@ -1,6 +1,8 @@
 package persistence;
 
 import logic.CryptoManager;
+import logic.Utils;
+
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -60,10 +62,10 @@ public class FileManager {
 			 * 
 			 * Some of these are uniform for every operation, so they can safely be written
 			 * for each of them. */
-			Files.setAttribute(file.toPath(), "user:Operation", meta.getOperation().toString().getBytes());
-			Files.setAttribute(file.toPath(), "user:Encryption", meta.getEncryptionType().toString().getBytes());
-			Files.setAttribute(file.toPath(), "user:HashFunction", meta.getHashFunction().toString().getBytes());
-			Files.setAttribute(file.toPath(), "user:Hash", meta.getHashValue().toString().getBytes());
+			Files.setAttribute(file.toPath(), "user:Operation", Utils.toByteArray(meta.getOperation().toString()));
+			Files.setAttribute(file.toPath(), "user:Encryption", Utils.toByteArray(meta.getEncryptionType().toString()));
+			Files.setAttribute(file.toPath(), "user:HashFunction", Utils.toByteArray(meta.getHashFunction().toString()));
+			Files.setAttribute(file.toPath(), "user:Hash", Utils.toByteArray(meta.getHashValue().toString()));
 			
 			// From there on we iterate over the operation method used.
 			switch(meta.getOperation()) {
@@ -72,15 +74,15 @@ public class FileManager {
 			 * we have to add information about the encryption mode used, padding techniques,
 			 * the key length dictated by the user and the IV generated if needed. */
 			case Symmetric:
-	            Files.setAttribute(file.toPath(), "user:Mode", meta.getEncryptionMode().toString().getBytes());
-	            Files.setAttribute(file.toPath(), "user:Padding", meta.getPaddingType().toString().getBytes());
-	            Files.setAttribute(file.toPath(), "user:KeyLength", meta.getKeyLength().toString().getBytes());
+	            Files.setAttribute(file.toPath(), "user:Mode", Utils.toByteArray(meta.getEncryptionMode().toString()));
+	            Files.setAttribute(file.toPath(), "user:Padding", Utils.toByteArray(meta.getPaddingType().toString()));
+	            Files.setAttribute(file.toPath(), "user:KeyLength", Utils.toByteArray(meta.getKeyLength().toString()));
 	            Files.setAttribute(file.toPath(), "user:IV", meta.getIV());
 	            break;
 	           
 	        /* in case of asymmetric encryption we just need to hand over the key length */
 			case Asymmetric:
-				Files.setAttribute(file.toPath(), "user:KeyLength", meta.getKeyLength().toString().getBytes());
+				Files.setAttribute(file.toPath(), "user:KeyLength", Utils.toByteArray(meta.getKeyLength().toString()));
 				break;
 			
 			/* for password based encryption the same goes but for the salt */
@@ -142,7 +144,7 @@ public class FileManager {
 			
 			// Now we decrypt the data and return it as a String.
 			CryptoManager.decrypt(meta);
-			return new String(meta.getText(), "UTF-8");
+			return Utils.toString(meta.getText());
 			
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -171,7 +173,7 @@ public class FileManager {
 			tempMeta.setOperation(Operation.valueOf(asString(file, "user:Operation")));
 			tempMeta.setEncryptionType(EncryptionType.valueOf(asString(file, "user:Encryption")));
 			tempMeta.setHashFunction(HashFunction.valueOf(asString(file, "user:HashFunction")));
-			tempMeta.setHashValue(new String((byte[])Files.getAttribute(file.toPath(), "user:Hash")));
+			tempMeta.setHashValue(Utils.toString((byte[])Files.getAttribute(file.toPath(), "user:Hash")));
 			
 			// iterate over the operation specific metadata
 			switch(tempMeta.getOperation()) {
@@ -181,7 +183,7 @@ public class FileManager {
 				tempMeta.setEncryptionMode(EncryptionMode.valueOf(asString(file, "user:Mode")));
 				tempMeta.setPaddingType(PaddingType.valueOf(asString(file, "user:Padding")));
 				tempMeta.setKeyLength(KeyLength.valueOf(asString(file, "user:KeyLength")));
-				tempMeta.setIV(asString(file, "user:IV").getBytes());
+				tempMeta.setIV(Utils.toByteArray(asString(file, "user:IV")));
 				break;
 				
 			case Asymmetric:
@@ -191,7 +193,7 @@ public class FileManager {
 				
 			case Password:
 					
-				tempMeta.setSalt(asString(file, "user:Salt").getBytes());
+				tempMeta.setSalt(Utils.toByteArray(asString(file, "user:Salt")));
 				break;
 			}
 
@@ -217,6 +219,6 @@ public class FileManager {
 	 * @throws Exception
 	 */
 	private static String asString(File file, String value) throws Exception {
-		return new String((byte[])Files.getAttribute(file.toPath(), value));
+		return Utils.toString((byte[])Files.getAttribute(file.toPath(), value));
 	}
 }

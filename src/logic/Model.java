@@ -148,6 +148,10 @@ public class Model {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+		
+			
+			// don't keep sensitive information in cache for too long
+			currentMeta = MetaData.getInstance();
 		}
 	}
 	
@@ -187,6 +191,11 @@ public class Model {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+			
+		
+			// don't keep sensitive information in cache for too long
+			
+			currentMeta = MetaData.getInstance();
 		}
 	}
 	

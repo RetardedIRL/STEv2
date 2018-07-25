@@ -9,8 +9,6 @@ import java.security.MessageDigest;
 import java.security.PrivateKey;
 import java.security.SecureRandom;
 import java.security.spec.PKCS8EncodedKeySpec;
-import java.util.Base64;
-import java.util.Base64.Decoder;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
@@ -56,7 +54,7 @@ public class CryptoManager {
     	/* transform input to byte array using a save, uniform transformation method.
     	 * 
     	 * Reason for this is it will stay unaffected by different charsets used by your JVM. */
-    	byte[] inputBytes = toByteArray(input);
+    	byte[] inputBytes = Utils.toByteArray(input);
 		
     	// setting cleartext here for fast return
     	meta.setText(inputBytes);
@@ -430,7 +428,7 @@ public class CryptoManager {
 	 * 
 	 * @param hashFunction the hashing function to be used.
 	 * @param input the byte array we base our hashing on.
-	 * @return a generated hash value encoded to String by Base64 or "" if the hashing function is NONE.
+	 * @return a generated hash value or "" if the hashing function is NONE.
 	 * 
 	 * @throws Exception
 	 */
@@ -447,8 +445,8 @@ public class CryptoManager {
 		// run the update function over the input array
 		hash.update(input);
 		
-		// return a String encoded by Base64 to guarantee unaffectedness by different char sets etc.
-		return Base64.getEncoder().encodeToString(hash.digest());
+		// return a String
+		return Utils.toString(hash.digest());
 	}
 
 	//TODO: private static
@@ -476,17 +474,18 @@ public class CryptoManager {
 			return true;
 		}
 
-		Decoder decoder = Base64.getDecoder();
 		/* using the MessageDigest compare function we check whether the read hash value is exactly
-		 * the same as the result of hashing our input with the hash function specified, using Base64
-		 * to decode our previously encoded hashes.
+		 * the same as the result of hashing our input with the hash function specified.
 		 * 
 		 * If true the file is still in it's original state (or the hash value has been tampered with the same
 		 * way the file got tampered with),
 		 * 
 		 * if not tampering/corruption is the case.
 		 */
-		return MessageDigest.isEqual(decoder.decode(read) , decoder.decode(generateHash(hashFunction, input)));
+		
+		byte[] generatedHash = Utils.toByteArray(generateHash(hashFunction, input));
+		byte[] readHash = Utils.toByteArray(read);
+		return MessageDigest.isEqual(Utils.toByteArray(read) , Utils.toByteArray(generateHash(hashFunction, input)));
 
 	}
 
@@ -499,37 +498,9 @@ public class CryptoManager {
 	 */
 	private static byte[] cutLeftovers(byte[] inputBytes) {
 		
-		
-		try {
 			
-			// returns a trimmed version of the faulty input text.
-			return toByteArray(new String(inputBytes, "UTF-8").trim());
-		} catch (UnsupportedEncodingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		return null;
+		// returns a trimmed version of the faulty input text.
+		return Utils.toByteArray(Utils.toString(inputBytes).trim());
 	}
-	
-	/**
-	 * Method to safely convert Strings to byte arrays.
-	 * 
-	 * As mentioned above this is recommended so the system can operate unaffected
-	 * by the char set used by your JVM.
-	 * 
-	 * @param string the String to be converted.
-	 * @return the safely converted byte array.
-	 */
-	private static byte[] toByteArray(String string) {
-		byte[] bytes = new byte[string.length()];
-		char[] chars = string.toCharArray();
-		
-		for(int i = 0; i != chars.length; i++) {
-			
-			bytes[i] = (byte) chars[i];
-		}
-		
-		return bytes;
-	}
+
 }

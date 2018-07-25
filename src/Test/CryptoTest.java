@@ -12,7 +12,7 @@ import Enums.PaddingType;
 import persistence.MetaData;
 
 import logic.CryptoManager;
-
+import logic.Utils;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -131,7 +131,7 @@ public class CryptoTest {
 			
 			CryptoManager.decrypt(testMeta);
 			
-			assertFalse(input.equals(new String(testMeta.getText(), "UTF-8")));
+			assertFalse(input.equals(Utils.toString(testMeta.getText())));
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -148,9 +148,9 @@ public class CryptoTest {
 			
 			CryptoManager.decrypt(meta);
 		
-			System.out.println(input + ", " + new String(meta.getText(), "UTF-8") + ".");
+			System.out.println(input + ", " + Utils.toString(meta.getText()) + ".");
 			
-			return new String(meta.getText(), "UTF-8");
+			return Utils.toString(meta.getText());
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
