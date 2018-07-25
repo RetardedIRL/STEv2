@@ -26,7 +26,7 @@ public class FileManager {
 
 	
 	/** static path used to write keys to, namely a USB drive or similar external mediums. */
-	private static String safetyPath = "D:\\safety\\";
+	private static String safetyPath = "D:\\ESS\\safety\\";
 	
 
 	/**
